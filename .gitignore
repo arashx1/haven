@@ -21,3 +21,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+*.pdf
+demo_script.html
+
