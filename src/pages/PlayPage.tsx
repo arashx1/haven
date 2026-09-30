@@ -15,8 +15,10 @@ import {
   ArrowLeft,
   CheckCircle,
   Heart,
+  Star,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Interactive mini-game components
 import { MemoryMatchGame } from '@/components/games/MemoryMatchGame';
@@ -56,8 +58,10 @@ const CATEGORIES: CategoryTab[] = [
   { id: 'zen', label: 'Peace & Calm', emoji: '🌸', conditionHint: 'healthy_aging' },
 ];
 
-export function PlayPage() {
+export function PlayPage({ onUpgrade }: { onUpgrade?: () => void }) {
   const { games, loading, error } = useGames();
+  const { isPro } = useSubscription();
+
   const { careCondition } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<'all' | GameCategory>('all');
   const [playingGameId, setPlayingGameId] = useState<string | null>(null);
@@ -91,7 +95,31 @@ export function PlayPage() {
         showBack={false}
       />
 
+      {/* RevenueCat upgrade banner (shown to free users only) */}
+      {!isPro && !playingGameId && (
+        <div
+          className="rounded-2xl mb-4 p-4 flex items-center gap-4"
+          style={{ background: 'linear-gradient(135deg,#fef3c7,#fde68a)', border: '2px solid #f59e0b' }}
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+            <Star className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-amber-900 text-sm">Unlock all games with Haven Plus</p>
+            <p className="text-amber-700 text-xs">New games, all categories, caregiver tools &amp; more.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onUpgrade}
+            style={{ cursor: 'pointer', padding: '8px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: 'white', fontWeight: 700, fontSize: '13px', border: 'none', whiteSpace: 'nowrap' }}
+          >
+            Upgrade
+          </button>
+        </div>
+      )}
+
       {/* Active Game Player Frame */}
+
       {playingGameId && activeGame ? (
         <div className="animate-scaleIn">
           {/* Top navigation bar inside game */}

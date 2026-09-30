@@ -3,8 +3,10 @@ import { PageHeader } from '@/components/UI';
 import { Phone, UserCog, Volume2, ArrowLeft, ShieldCheck, HeartPulse } from 'lucide-react';
 import { useState } from 'react';
 
-export function HelpPage() {
+export function HelpPage({ onUpgrade }: { onUpgrade?: () => void }) {
   const { goBack, careCondition } = useApp();
+  void onUpgrade; // available for future use
+
   const [speechNotice, setSpeechNotice] = useState<string | null>(null);
 
   const handleReadAloud = (text: string) => {

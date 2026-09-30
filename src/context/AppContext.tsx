@@ -9,6 +9,7 @@ import { type Language, type TextScale, type CareCondition } from '@/data/mockDa
 import i18n from '@/i18n';
 import { supabase } from '@/lib/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
+import { initRevenueCat } from '@/lib/revenuecat';
 
 export type Route =
   | 'my-day'
@@ -141,6 +142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setAuthState('authenticated');
           setRoute('my-day');
           loadProfile(initialSession.user.id, initialSession.user.user_metadata?.full_name);
+          initRevenueCat(initialSession.user.id);
         }
         setAuthLoading(false);
       })
@@ -154,6 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('haven_demo_user');
         setAuthState((prev) => (prev === 'onboarding' ? prev : 'authenticated'));
         loadProfile(newSession.user.id, newSession.user.user_metadata?.full_name);
+        initRevenueCat(newSession.user.id);
       } else {
         const hasDemo = localStorage.getItem('haven_demo_user');
         if (!hasDemo) {

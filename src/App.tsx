@@ -15,9 +15,13 @@ import { CaregiverDashboardPage } from '@/pages/CaregiverDashboardPage';
 import { DemoPage } from '@/pages/DemoPage';
 import { AuthGateModal } from '@/components/AuthGateModal';
 import { CookieBanner } from '@/components/CookieBanner';
+import { PaywallModal } from '@/components/PaywallModal';
+import { useState } from 'react';
+
 
 function AppRouter() {
   const { route, authLoading } = useApp();
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   if (authLoading) {
     return (
@@ -44,12 +48,12 @@ function AppRouter() {
     return (
       <PatientLayout>
         {route === 'my-day' && <MyDayPage />}
-        {route === 'play' && <PlayPage />}
+        {route === 'play' && <PlayPage onUpgrade={() => setPaywallOpen(true)} />}
         {route === 'memories' && <MemoriesPage />}
         {route === 'memory-detail' && <MemoryDetailPage />}
         {route === 'people' && <PeoplePage />}
         {route === 'person-detail' && <PersonDetailPage />}
-        {route === 'help' && <HelpPage />}
+        {route === 'help' && <HelpPage onUpgrade={() => setPaywallOpen(true)} />}
       </PatientLayout>
     );
   };
@@ -61,9 +65,17 @@ function AppRouter() {
       <AuthGateModal />
       {/* Cookie & data storage compliance banner */}
       <CookieBanner />
+      {/* RevenueCat paywall */}
+      {paywallOpen && (
+        <PaywallModal
+          onClose={() => setPaywallOpen(false)}
+          onSuccess={() => setPaywallOpen(false)}
+        />
+      )}
     </>
   );
 }
+
 
 function App() {
   return (
