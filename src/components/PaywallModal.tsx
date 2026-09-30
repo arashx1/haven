@@ -228,15 +228,18 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
                     </div>
 
                     <div className="mb-3">
-                      <span className="text-2xl font-display font-bold text-ink-800">
-                        {selectedPlan === 'annual' ? plan.annualMonthly : plan.monthlyPrice}
-                      </span>
-                      <span className="text-ink-500 text-sm">/mo</span>
-                      {selectedPlan === 'annual' && (
-                        <div className="text-xs text-sage-600 font-semibold mt-0.5">
-                          Billed {plan.annualPrice}/year · {plan.savings}
-                        </div>
-                      )}
+                      <div className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full mb-1.5">
+                        <span>🎁 1 Month Free Trial</span>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-display font-bold text-ink-800">
+                          {selectedPlan === 'annual' ? plan.annualMonthly : plan.monthlyPrice}
+                        </span>
+                        <span className="text-ink-500 text-sm">/mo</span>
+                      </div>
+                      <p className="text-xs text-ink-500 mt-0.5">
+                        Free for 30 days, then {selectedPlan === 'annual' ? `${plan.annualPrice}/year (${plan.savings})` : `${plan.monthlyPrice}/month`}
+                      </p>
                     </div>
 
                     <ul className="space-y-1.5 mb-4">
@@ -269,11 +272,14 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
                       }}
                     >
                       {purchasing === (matchedPkg?.identifier ?? plan.id) ? (
-                        <><Loader className="w-4 h-4 animate-spin" /> Processing…</>
+                        <><Loader className="w-4 h-4 animate-spin" /> Starting Trial…</>
                       ) : (
-                        <><Zap className="w-4 h-4" /> Get {plan.name}</>
+                        <><Zap className="w-4 h-4" /> Start 1-Month Free Trial</>
                       )}
                     </button>
+                    <p className="text-[10px] text-center text-ink-400 mt-1.5 font-medium">
+                      Cancel anytime before trial ends · No charge today
+                    </p>
                   </div>
                 );
               })}

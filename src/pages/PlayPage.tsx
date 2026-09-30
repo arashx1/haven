@@ -105,15 +105,20 @@ export function PlayPage({ onUpgrade }: { onUpgrade?: () => void }) {
             <Star className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-amber-900 text-sm">Unlock all games with Haven Plus</p>
-            <p className="text-amber-700 text-xs">New games, all categories, caregiver tools &amp; more.</p>
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-amber-900 text-sm">Unlock all games with Haven Plus</p>
+              <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                1 Month Free
+              </span>
+            </div>
+            <p className="text-amber-800 text-xs">Try all games, memories &amp; caregiver tools free for 30 days. Cancel anytime.</p>
           </div>
           <button
             type="button"
             onClick={onUpgrade}
             style={{ cursor: 'pointer', padding: '8px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: 'white', fontWeight: 700, fontSize: '13px', border: 'none', whiteSpace: 'nowrap' }}
           >
-            Upgrade
+            Try 1 Month Free
           </button>
         </div>
       )}

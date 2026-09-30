@@ -78,9 +78,9 @@ export function MyDayPage() {
             title="View Haven Plus & Family Subscriptions (RevenueCat)"
           >
             <Crown className="w-3.5 h-3.5 text-amber-600" />
-            <span>Haven Plus Available</span>
-            <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded-full font-bold">
-              RevenueCat SDK
+            <span>Try Haven Plus Free for 1 Month</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+              30-Day Free Trial
             </span>
           </button>
         </div>
