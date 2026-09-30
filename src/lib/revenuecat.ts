@@ -66,8 +66,15 @@ export function getSubscriptionTier(info: CustomerInfo | null): SubscriptionTier
     if (entitlements['haven_family'] || entitlements['family']) return 'haven_family';
     if (entitlements['haven_plus'] || entitlements['premium'] || entitlements['pro']) return 'haven_plus';
   }
-  // Check local demo trial storage
+  // Check local demo trial storage with automatic 30-day expiration
   const localTier = localStorage.getItem('haven_subscription_tier') as SubscriptionTier | null;
+  const expiry = localStorage.getItem('haven_subscription_expiry');
+  if (expiry && new Date(expiry).getTime() < Date.now()) {
+    // 1-Month Free Trial has ended, automatically revert to free
+    localStorage.removeItem('haven_subscription_tier');
+    localStorage.removeItem('haven_subscription_expiry');
+    return 'free';
+  }
   if (localTier === 'haven_plus' || localTier === 'haven_family') {
     return localTier;
   }

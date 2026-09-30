@@ -16,7 +16,7 @@ import { DemoPage } from '@/pages/DemoPage';
 import { AuthGateModal } from '@/components/AuthGateModal';
 import { CookieBanner } from '@/components/CookieBanner';
 import { PaywallModal } from '@/components/PaywallModal';
-import { useState } from 'react';
+import { TrialWelcomeModal } from '@/components/TrialWelcomeModal';
 
 
 function AppRouter() {
@@ -64,6 +64,8 @@ function AppRouter() {
       <AuthGateModal />
       {/* Cookie & data storage compliance banner */}
       <CookieBanner />
+      {/* New user 1-Month Free Trial welcome announcement */}
+      <TrialWelcomeModal />
       {/* RevenueCat paywall */}
       {paywallOpen && (
         <PaywallModal
