@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --base-font: 100%;
+}
+
+html {
+  font-size: var(--base-font);
+  scroll-behavior: smooth;
+}
+
+/* Kept as plain CSS here (not inside @layer components) and placed
+   after :root. Tailwind injects everything inside @layer components
+   at the position of the `@tailwind components;` directive above —
+   i.e. earlier in the compiled file than this plain :root rule. With
+   equal specificity, the later rule in the file wins, so :root's
+   100% was silently overriding .text-scale-1/3/4 and the A-/A+
+   buttons had no visible effect. Placing these rules here, after
+   :root, makes them win instead. */
+.text-scale-1 { --base-font: 93.75%; }
+.text-scale-2 { --base-font: 100%; }
+.text-scale-3 { --base-font: 112.5%; }
+.text-scale-4 { --base-font: 125%; }
+
+body {
+  background-color: #FAF6EF;
+  color: #2D2722;
+  font-family: 'Nunito', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+*:focus-visible {
+  outline: 3px solid #D9772E;
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF6EF;
+}
+::-webkit-scrollbar-thumb {
+  background: #EBE0CE;
+  border-radius: 999px;
+  border: 3px solid #FAF6EF;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D8CFC4;
+}
+
+@layer components {
+  .card-base {
+    @apply bg-white rounded-3xl shadow-card transition-all duration-300;
+  }
+  .card-hover {
+    @apply hover:shadow-lift hover:-translate-y-1 cursor-pointer;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-3 bg-honey-500 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-warm transition-all duration-200 hover:bg-honey-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-3 bg-cream-100 text-ink-700 font-bold rounded-2xl px-8 py-5 text-xl border-2 border-cream-300 transition-all duration-200 hover:bg-cream-200 active:scale-[0.98];
+  }
+  .btn-success {
+    @apply inline-flex items-center justify-center gap-3 bg-sage-500 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-soft transition-all duration-200 hover:bg-sage-600 active:scale-[0.98];
+  }
+  .btn-help {
+    @apply inline-flex items-center justify-center gap-3 bg-coral-500 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-soft transition-all duration-200 hover:bg-coral-600 active:scale-[0.98];
+  }
+  .nav-item {
+    @apply flex flex-col items-center justify-center gap-1.5 px-2 py-2 rounded-2xl transition-all duration-200 min-w-[64px];
+  }
+  .nav-item-active {
+    @apply bg-honey-100 text-honey-700;
+  }
+  .nav-item-inactive {
+    @apply text-ink-500 hover:bg-cream-200 hover:text-ink-700;
+  }
+  .section-title {
+    @apply font-display font-extrabold text-ink-800;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
