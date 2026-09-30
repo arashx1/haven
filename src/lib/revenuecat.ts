@@ -1,7 +1,7 @@
 import { Purchases, type CustomerInfo, type Offerings } from '@revenuecat/purchases-js';
 
-// RevenueCat Web API key - set in env or fallback to placeholder
-const RC_API_KEY = import.meta.env.VITE_REVENUECAT_API_KEY || '';
+// RevenueCat Web API key - set in env or fallback to project key
+const RC_API_KEY = import.meta.env.VITE_REVENUECAT_API_KEY || 'test_oGAXUiphlJBxIXxVkUvGDIHYrDQ';
 
 export type SubscriptionTier = 'free' | 'haven_plus' | 'haven_family';
 
