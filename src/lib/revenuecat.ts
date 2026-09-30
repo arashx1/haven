@@ -58,14 +58,40 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
 }
 
 /**
- * Determine subscription tier from CustomerInfo.
+ * Determine subscription tier from CustomerInfo or local demo state.
  */
 export function getSubscriptionTier(info: CustomerInfo | null): SubscriptionTier {
-  if (!info) return 'free';
-  const entitlements = info.entitlements.active;
-  if (entitlements['haven_family'] || entitlements['family']) return 'haven_family';
-  if (entitlements['haven_plus'] || entitlements['premium'] || entitlements['pro']) return 'haven_plus';
+  if (info) {
+    const entitlements = info.entitlements.active;
+    if (entitlements['haven_family'] || entitlements['family']) return 'haven_family';
+    if (entitlements['haven_plus'] || entitlements['premium'] || entitlements['pro']) return 'haven_plus';
+  }
+  // Check local demo trial storage
+  const localTier = localStorage.getItem('haven_subscription_tier') as SubscriptionTier | null;
+  if (localTier === 'haven_plus' || localTier === 'haven_family') {
+    return localTier;
+  }
   return 'free';
+}
+
+/**
+ * Activate a 1-month free trial in demo/simulation mode.
+ */
+export function activateDemoSubscription(tier: SubscriptionTier = 'haven_plus') {
+  localStorage.setItem('haven_subscription_tier', tier);
+  const expiry = new Date();
+  expiry.setDate(expiry.getDate() + 30);
+  localStorage.setItem('haven_subscription_expiry', expiry.toISOString());
+  window.dispatchEvent(new Event('haven_subscription_changed'));
+}
+
+/**
+ * Cancel local demo subscription.
+ */
+export function cancelDemoSubscription() {
+  localStorage.removeItem('haven_subscription_tier');
+  localStorage.removeItem('haven_subscription_expiry');
+  window.dispatchEvent(new Event('haven_subscription_changed'));
 }
 
 /**

@@ -27,6 +27,9 @@ export function useSubscription(): UseSubscriptionReturn {
 
   useEffect(() => {
     refresh();
+    const handler = () => refresh();
+    window.addEventListener('haven_subscription_changed', handler);
+    return () => window.removeEventListener('haven_subscription_changed', handler);
   }, [refresh]);
 
   return {

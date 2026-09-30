@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X, Star, Heart, Users, Zap, CheckCircle, RefreshCw, Loader } from 'lucide-react';
+import { X, Star, Heart, Users, Zap, CheckCircle, RefreshCw, Loader, Sparkles } from 'lucide-react';
 import {
   getOfferings,
   purchasePackage,
   restorePurchases,
   getSubscriptionTier,
+  activateDemoSubscription,
+  type SubscriptionTier,
 } from '@/lib/revenuecat';
 import type { Offerings, Package } from '@revenuecat/purchases-js';
 
@@ -46,15 +48,18 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
+  const [successPlan, setSuccessPlan] = useState<string | null>(null);
+  const [currentTier, setCurrentTier] = useState<SubscriptionTier>('free');
 
   useEffect(() => {
+    setCurrentTier(getSubscriptionTier(null));
     getOfferings().then((o) => {
       setOfferings(o);
       setLoading(false);
     });
   }, []);
 
-  const handlePurchase = async (pkg: Package) => {
+  const handlePurchase = async (pkg: Package, planName: string) => {
     setError('');
     setPurchasing(pkg.identifier);
     const result = await purchasePackage(pkg);
@@ -62,11 +67,35 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
     if (result.success && result.customerInfo) {
       const tier = getSubscriptionTier(result.customerInfo);
       console.info('[RevenueCat] Purchase successful, tier:', tier);
+      setSuccessPlan(planName);
       onSuccess?.();
-      onClose();
     } else if (result.error && result.error !== 'cancelled') {
       setError(result.error);
     }
+  };
+
+  const handleSelectPlan = async (
+    planId: 'haven_plus' | 'haven_family',
+    planName: string,
+    matchedPkg?: Package
+  ) => {
+    setError('');
+    setPurchasing(planId);
+
+    // If live RevenueCat SDK is configured and has offerings
+    if (matchedPkg && !isDemoMode) {
+      await handlePurchase(matchedPkg, planName);
+      return;
+    }
+
+    // In demo / hackathon simulation mode: activate 1-month trial with delightful feedback
+    setTimeout(() => {
+      activateDemoSubscription(planId);
+      setCurrentTier(planId);
+      setPurchasing(null);
+      setSuccessPlan(planName);
+      onSuccess?.();
+    }, 800);
   };
 
   const handleRestore = async () => {
@@ -77,8 +106,18 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
     if (info) {
       const tier = getSubscriptionTier(info);
       if (tier !== 'free') {
+        setCurrentTier(tier);
         onSuccess?.();
         onClose();
+      } else {
+        setError('No active subscription found to restore.');
+      }
+    } else {
+      // In demo mode: restore active local demo subscription if any
+      const localTier = getSubscriptionTier(null);
+      if (localTier !== 'free') {
+        setCurrentTier(localTier);
+        setError('');
       } else {
         setError('No active subscription found to restore.');
       }
@@ -159,13 +198,43 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
         </div>
 
         <div className="p-6">
-          {/* RevenueCat Integration Badge */}
-          <div className="flex items-center justify-center gap-2 py-1 px-3 bg-amber-50 border border-amber-200/80 rounded-full w-fit mx-auto mb-4">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-medium text-amber-900">
-              Subscriptions powered by <strong className="font-bold">RevenueCat Web SDK</strong>
-            </span>
-          </div>
+          {successPlan ? (
+            <div className="py-6 px-2 text-center animate-scaleIn">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 shadow-soft">
+                <CheckCircle className="w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-bold font-display text-ink-800 mb-2">
+                1-Month Free Trial Activated! 🎉
+              </h3>
+              <p className="text-ink-600 text-base max-w-md mx-auto mb-4">
+                Welcome to <strong>{successPlan}</strong>. Your 30-day free trial has been activated with zero charge today.
+              </p>
+              <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 max-w-sm mx-auto mb-6 text-xs text-amber-900 text-left">
+                <div className="flex items-center gap-1.5 font-bold mb-1">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>Subscriptions powered by RevenueCat SDK</span>
+                </div>
+                <p className="text-amber-800">
+                  All 10 cognitive games, unlimited memory photos, and full caregiver access are now active on your account.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-primary px-8 py-3 text-base shadow-warm mx-auto"
+              >
+                Start Exploring {successPlan}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* RevenueCat Integration Badge */}
+              <div className="flex items-center justify-center gap-2 py-1 px-3 bg-amber-50 border border-amber-200/80 rounded-full w-fit mx-auto mb-4">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-medium text-amber-900">
+                  Subscriptions powered by <strong className="font-bold">RevenueCat Web SDK</strong>
+                </span>
+              </div>
 
           {/* Billing toggle */}
           <div className="flex items-center justify-center gap-3 mb-5">
@@ -251,32 +320,32 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
                       ))}
                     </ul>
 
-                    <button
-                      type="button"
-                      disabled={!!purchasing}
-                      onClick={() => {
-                        if (matchedPkg && !isDemoMode) {
-                          handlePurchase(matchedPkg);
-                        } else {
-                          // Demo mode: show coming soon
-                          setError('Connect your RevenueCat API key to enable real purchases. (Demo mode)');
-                        }
-                      }}
-                      style={{
-                        width: '100%', cursor: purchasing ? 'not-allowed' : 'pointer',
-                        padding: '10px', borderRadius: '999px', border: 'none',
-                        background: plan.popular ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#6db8a0,#4a9e87)',
-                        color: 'white', fontWeight: 700, fontSize: '14px',
-                        opacity: purchasing ? 0.7 : 1, transition: 'all 0.2s',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      }}
-                    >
-                      {purchasing === (matchedPkg?.identifier ?? plan.id) ? (
-                        <><Loader className="w-4 h-4 animate-spin" /> Starting Trial…</>
-                      ) : (
-                        <><Zap className="w-4 h-4" /> Start 1-Month Free Trial</>
-                      )}
-                    </button>
+                    {currentTier === plan.id ? (
+                      <div className="w-full py-2.5 px-4 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold text-sm text-center flex items-center justify-center gap-1.5">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Active Plan (Trial Ongoing)</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={!!purchasing}
+                        onClick={() => handleSelectPlan(plan.id as 'haven_plus' | 'haven_family', plan.name, matchedPkg)}
+                        style={{
+                          width: '100%', cursor: purchasing ? 'not-allowed' : 'pointer',
+                          padding: '10px', borderRadius: '999px', border: 'none',
+                          background: plan.popular ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#6db8a0,#4a9e87)',
+                          color: 'white', fontWeight: 700, fontSize: '14px',
+                          opacity: purchasing ? 0.7 : 1, transition: 'all 0.2s',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        }}
+                      >
+                        {purchasing === (matchedPkg?.identifier ?? plan.id) ? (
+                          <><Loader className="w-4 h-4 animate-spin" /> Activating Trial…</>
+                        ) : (
+                          <><Zap className="w-4 h-4" /> Start 1-Month Free Trial</>
+                        )}
+                      </button>
+                    )}
                     <p className="text-[10px] text-center text-ink-400 mt-1.5 font-medium">
                       Cancel anytime before trial ends · No charge today
                     </p>
@@ -321,7 +390,9 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
               <a href="#" className="hover:underline">Privacy</a>
             </div>
           </div>
-        </div>
+        </>
+      )}
+    </div>
       </div>
     </div>
   );
