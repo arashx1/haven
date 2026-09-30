@@ -1,11 +1,11 @@
 import { useApp } from '@/context/AppContext';
 import { LANGUAGES, type Language } from '@/data/mockData';
-import { Globe, Type, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { Globe, Type, ChevronDown, Check, Sparkles, Crown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export function TopBar() {
-  const { language, setLanguage, textScale, setTextScale, navigate, authState } = useApp();
+  const { language, setLanguage, textScale, setTextScale, navigate, authState, openPaywall } = useApp();
   const { t } = useTranslation();
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
@@ -51,6 +51,19 @@ export function TopBar() {
           >
             <Sparkles className="w-4 h-4 text-honey-600" />
             <span className="hidden md:inline">{t('tour', 'Tour')}</span>
+          </button>
+
+          {/* RevenueCat Subscriptions Button */}
+          <button
+            onClick={openPaywall}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-warm rounded-2xl px-3.5 py-2 transition font-bold text-sm active:scale-95 group cursor-pointer"
+            title="Subscriptions powered by RevenueCat SDK"
+          >
+            <Crown className="w-4 h-4 text-amber-200 group-hover:scale-110 transition-transform" />
+            <span>Upgrade</span>
+            <span className="hidden lg:inline text-[10px] font-semibold bg-white/20 text-white px-1.5 py-0.5 rounded-full ml-0.5">
+              RevenueCat
+            </span>
           </button>
 
           {/* Text size control */}

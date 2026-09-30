@@ -159,6 +159,14 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
         </div>
 
         <div className="p-6">
+          {/* RevenueCat Integration Badge */}
+          <div className="flex items-center justify-center gap-2 py-1 px-3 bg-amber-50 border border-amber-200/80 rounded-full w-fit mx-auto mb-4">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-medium text-amber-900">
+              Subscriptions powered by <strong className="font-bold">RevenueCat Web SDK</strong>
+            </span>
+          </div>
+
           {/* Billing toggle */}
           <div className="flex items-center justify-center gap-3 mb-5">
             <button
@@ -289,7 +297,7 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
           )}
 
           {/* Restore + footer */}
-          <div className="flex items-center justify-between text-xs text-ink-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-ink-400 pt-2 border-t border-cream-200">
             <button
               type="button"
               onClick={handleRestore}
@@ -299,8 +307,11 @@ export function PaywallModal({ onClose, onSuccess, featureName }: PaywallProps) 
               <RefreshCw className={`w-3.5 h-3.5 ${restoring ? 'animate-spin' : ''}`} />
               Restore Purchases
             </button>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-2 text-[11px] text-ink-400">
+              <span className="font-medium text-amber-700">Verified by RevenueCat</span>
+              <span>•</span>
               <a href="#" className="hover:underline">Terms</a>
+              <span>•</span>
               <a href="#" className="hover:underline">Privacy</a>
             </div>
           </div>

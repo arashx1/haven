@@ -128,7 +128,7 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'caregiver',
-    badge: 'Feature 5 of 5',
+    badge: 'Feature 5 of 6',
     title: 'Caregiver Portal & Accessibility',
     tagline: 'Peace of mind for families, complete accessibility for patients.',
     description:
@@ -143,6 +143,23 @@ const TOUR_STEPS: TourStep[] = [
       'Powered by resilient cloud sync and instant offline demo fallback',
     ],
     interactiveDemo: { type: 'accessibility' },
+  },
+  {
+    id: 'subscriptions',
+    badge: 'Feature 6 of 6',
+    title: 'Subscriptions & Family Tiers',
+    tagline: 'Powered by RevenueCat Web SDK (@revenuecat/purchases-js).',
+    description:
+      'Haven integrates the official RevenueCat Web SDK to provide tiered plans: Haven Plus for individuals and Haven Family for multi-caregiver households, supporting offerings, customer entitlements, and paywalls.',
+    icon: Sparkles,
+    gradient: 'from-amber-400 to-amber-600',
+    accentColor: 'text-amber-600',
+    points: [
+      'Official RevenueCat Web SDK integration (@revenuecat/purchases-js)',
+      'Tiered plans: Haven Plus ($9.99/mo) & Haven Family ($19.99/mo)',
+      'Entitlements-based feature gating for games, routines, and memories',
+      'Integrated Paywall Modal with monthly/annual toggle and restore flow',
+    ],
   },
   {
     id: 'get-started',

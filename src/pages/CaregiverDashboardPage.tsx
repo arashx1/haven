@@ -29,6 +29,8 @@ import {
   Brain,
   Sun,
   ShieldCheck,
+  Crown,
+  Zap,
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState } from '@/components/UI';
 import { CONDITIONS, type CareCondition } from '@/data/mockData';
@@ -244,6 +246,7 @@ function OverviewTab({
 }) {
   const currentCondition = CONDITIONS.find((c) => c.id === careCondition) || CONDITIONS[0];
   const CurrentIcon = conditionIcons[currentCondition.iconName] || Brain;
+  const { openPaywall } = useApp();
 
   return (
     <div className="animate-fadeIn space-y-6">
@@ -254,6 +257,37 @@ function OverviewTab({
         <StatCard icon={<BarChart3 className="w-7 h-7 text-honey-600" />} label="Completion" value={`${completionRate}%`} color="bg-honey-100" />
         <StatCard icon={<Images className="w-7 h-7 text-coral-600" />} label="Memories" value={memoryCount} color="bg-coral-100" />
         <StatCard icon={<Users className="w-7 h-7 text-ink-600" />} label="People" value={peopleCount} color="bg-cream-200" />
+      </div>
+
+      {/* RevenueCat Subscriptions & Plan Card */}
+      <div className="card-base p-6 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent border-2 border-amber-300/80 shadow-warm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-warm shrink-0">
+              <Crown className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-amber-900 uppercase tracking-wider bg-amber-100 px-2.5 py-0.5 rounded-full">
+                  Subscription Plan
+                </span>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  RevenueCat SDK Connected
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-ink-800 mt-1">Haven Plus & Family Subscriptions</h3>
+              <p className="text-sm text-ink-500">Cross-device synchronization, unlimited reminders & family caregiver accounts</p>
+            </div>
+          </div>
+          <button
+            onClick={openPaywall}
+            className="btn-primary whitespace-nowrap bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-warm self-start sm:self-center"
+          >
+            <Zap className="w-4 h-4" />
+            View RevenueCat Paywall
+          </button>
+        </div>
       </div>
 
       {/* Multidisease & Care Condition Focus Card */}

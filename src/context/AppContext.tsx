@@ -61,6 +61,10 @@ interface AppState {
   authGateFeature: string;
   openAuthGate: (feature?: string) => void;
   closeAuthGate: () => void;
+  // RevenueCat Paywall modal
+  paywallOpen: boolean;
+  openPaywall: () => void;
+  closePaywall: () => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -80,6 +84,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const [authGateFeature, setAuthGateFeature] = useState('');
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [careCondition, setCareConditionState] = useState<CareCondition>(() => {
     return (localStorage.getItem('haven_care_condition') as CareCondition) || 'dementia';
   });
@@ -264,6 +269,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuthGateFeature('');
   };
 
+  const openPaywall = () => setPaywallOpen(true);
+  const closePaywall = () => setPaywallOpen(false);
+
   const value: AppState = {
     route,
     navigate,
@@ -292,6 +300,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     authGateFeature,
     openAuthGate,
     closeAuthGate,
+    paywallOpen,
+    openPaywall,
+    closePaywall,
     careCondition,
     setCareCondition,
   };

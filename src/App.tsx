@@ -20,8 +20,7 @@ import { useState } from 'react';
 
 
 function AppRouter() {
-  const { route, authLoading } = useApp();
-  const [paywallOpen, setPaywallOpen] = useState(false);
+  const { route, authLoading, paywallOpen, closePaywall, openPaywall } = useApp();
 
   if (authLoading) {
     return (
@@ -48,12 +47,12 @@ function AppRouter() {
     return (
       <PatientLayout>
         {route === 'my-day' && <MyDayPage />}
-        {route === 'play' && <PlayPage onUpgrade={() => setPaywallOpen(true)} />}
+        {route === 'play' && <PlayPage onUpgrade={openPaywall} />}
         {route === 'memories' && <MemoriesPage />}
         {route === 'memory-detail' && <MemoryDetailPage />}
         {route === 'people' && <PeoplePage />}
         {route === 'person-detail' && <PersonDetailPage />}
-        {route === 'help' && <HelpPage onUpgrade={() => setPaywallOpen(true)} />}
+        {route === 'help' && <HelpPage onUpgrade={openPaywall} />}
       </PatientLayout>
     );
   };
@@ -68,8 +67,8 @@ function AppRouter() {
       {/* RevenueCat paywall */}
       {paywallOpen && (
         <PaywallModal
-          onClose={() => setPaywallOpen(false)}
-          onSuccess={() => setPaywallOpen(false)}
+          onClose={closePaywall}
+          onSuccess={closePaywall}
         />
       )}
     </>
