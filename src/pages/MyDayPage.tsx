@@ -6,7 +6,6 @@ import {
   Check,
   Clock,
   Sun,
-  Crown,
 } from 'lucide-react';
 import { useState } from 'react';
 import { SuccessToast, LoadingState, ErrorState } from '@/components/UI';
@@ -14,7 +13,7 @@ import { ConditionCareModule } from '@/components/ConditionCareModule';
 
 export function MyDayPage() {
   const { t, i18n } = useTranslation();
-  const { patientName, careCondition, openPaywall } = useApp();
+  const { patientName, careCondition } = useApp();
   const { reminders, loading, error, completeReminder, refresh } = useReminders();
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -69,21 +68,6 @@ export function MyDayPage() {
         <p className="text-xl text-ink-500 font-semibold">
           {t('todayIs')} {todayName}, {dateStr}
         </p>
-
-        {/* RevenueCat Subscriptions Pill */}
-        <div className="mt-3 flex items-center justify-center">
-          <button
-            onClick={openPaywall}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 hover:border-amber-300 text-amber-900 text-xs font-semibold shadow-xs hover:shadow-sm transition active:scale-95 cursor-pointer"
-            title="View Haven Plus & Family Subscriptions (RevenueCat)"
-          >
-            <Crown className="w-3.5 h-3.5 text-amber-600" />
-            <span>Try Haven Plus Free for 1 Month</span>
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
-              30-Day Free Trial
-            </span>
-          </button>
-        </div>
       </div>
 
       {/* Disease-Specific Adaptive Care Hub */}
