@@ -28,6 +28,8 @@ Memory impairment, whether caused by dementia, Alzheimer’s, or stroke, can cre
 
 ## 👑 RevenueCat SDK Integration (Shipathon 2026)
 
+- **RevenueCat Project ID:** `044658bf`
+
 Haven implements the official **RevenueCat Web SDK (`@revenuecat/purchases-js`)** for cross-platform subscription management, entitlements, and in-app checkout.
 
 ### Key Integration Points:
