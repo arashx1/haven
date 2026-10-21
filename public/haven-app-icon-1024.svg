@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="havenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="45%" stop-color="#E5944E" />
+      <stop offset="100%" stop-color="#BC5E1E" />
+    </linearGradient>
+    <linearGradient id="highlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+    <filter id="softGlow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="40" stdDeviation="40" flood-color="#5C3015" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Square Base with Gentle Corner Radius (Uncropped 1024x1024 App Icon) -->
+  <rect x="48" y="48" width="928" height="928" rx="256" fill="url(#havenGradient)" filter="url(#softGlow)" />
+  
+  <!-- Subtle Top Rim Reflection -->
+  <rect x="72" y="72" width="880" height="880" rx="232" fill="none" stroke="url(#highlight)" stroke-width="24" />
+
+  <!-- Bold, Friendly 'H' Emblem for Haven -->
+  <path d="
+    M 328,240
+    C 358,240 384,266 384,296
+    L 384,448
+    L 640,448
+    L 640,296
+    C 640,266 666,240 696,240
+    C 726,240 752,266 752,296
+    L 752,728
+    C 752,758 726,784 696,784
+    C 666,784 640,758 640,728
+    L 640,576
+    L 384,576
+    L 384,728
+    C 384,758 358,784 328,784
+    C 298,784 272,758 272,728
+    L 272,296
+    C 272,266 298,240 328,240
+    Z"
+    fill="#FFFFFF"
+  />
+
+  <!-- Subtle Caring Hearth / Heart Accent on the crossbar -->
+  <path d="M 512,472 C 483,440 440,460 440,496 C 440,525 512,568 512,568 C 512,568 584,525 584,496 C 584,460 541,440 512,472 Z" fill="#BC5E1E" />
+</svg>

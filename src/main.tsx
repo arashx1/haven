@@ -3,6 +3,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { initUtmTracking } from './utils/utmTracking';
+
+// Item 14 – capture UTM params from URL before app renders
+initUtmTracking();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,13 +1,35 @@
 import { useApp } from '@/context/AppContext';
 import { LANGUAGES, type Language } from '@/data/mockData';
-import { Globe, Type, ChevronDown, Check, Sparkles, Crown } from 'lucide-react';
+import { Globe, Type, ChevronDown, Check, Sparkles, Crown, Sun, Moon, Search } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SiteSearchModal } from './SiteSearchModal';
+
+function useDarkMode() {
+  const [dark, setDark] = useState<boolean>(() => {
+    const stored = localStorage.getItem('haven_dark_mode');
+    if (stored !== null) return stored === 'true';
+    return document.documentElement.classList.contains('dark');
+  });
+
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('haven_dark_mode', String(dark));
+  }, [dark]);
+
+  return [dark, setDark] as const;
+}
 
 export function TopBar() {
   const { language, setLanguage, textScale, setTextScale, navigate, authState, openPaywall } = useApp();
   const { t } = useTranslation();
   const [langOpen, setLangOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [dark, setDark] = useDarkMode();
   const langRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,10 +42,28 @@ export function TopBar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Listen for global Ctrl+K to open search
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).type === 'haven_open_search') setSearchOpen(true);
+    };
+    window.addEventListener('haven_open_search', handler);
+    return () => window.removeEventListener('haven_open_search', handler);
+  }, []);
+
   const current = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
   return (
-    <header className="sticky top-0 z-40 bg-cream-50/90 backdrop-blur-md border-b border-cream-200 shadow-xs">
+    <>
+      {/* Skip to Content – Item 12 */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-honey-500 focus:text-white focus:font-bold focus:rounded-xl focus:shadow-lg focus:outline-none"
+      >
+        Skip to content
+      </a>
+
+      <header className="sticky top-0 z-40 bg-cream-50/90 dark:bg-ink-900/90 backdrop-blur-md border-b border-cream-200 dark:border-ink-800 shadow-xs">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
         {/* Brand / Logo */}
         <button
@@ -43,6 +83,18 @@ export function TopBar() {
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Site Search Button – Item 3 */}
+          <button
+            id="site-search-btn"
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-1.5 bg-cream-100 dark:bg-ink-800 hover:bg-cream-200 dark:hover:bg-ink-700 border border-cream-300 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-2xl px-3 py-2 transition font-bold text-sm"
+            title="Search (Ctrl+K)"
+            aria-label="Open site search"
+          >
+            <Search className="w-4 h-4" />
+            <span className="hidden md:inline text-xs text-ink-400 dark:text-ink-500 font-normal">Ctrl+K</span>
+          </button>
+
           {/* Feature Tour Button */}
           <button
             onClick={() => navigate('demo')}
@@ -51,6 +103,17 @@ export function TopBar() {
           >
             <Sparkles className="w-4 h-4 text-honey-600" />
             <span className="hidden md:inline">{t('tour', 'Tour')}</span>
+          </button>
+
+          {/* Dark Mode Toggle – Item 1 */}
+          <button
+            id="dark-mode-toggle"
+            onClick={() => setDark((d) => !d)}
+            className="w-9 h-9 flex items-center justify-center rounded-2xl bg-cream-100 dark:bg-ink-800 hover:bg-cream-200 dark:hover:bg-ink-700 border border-cream-300 dark:border-ink-700 text-ink-600 dark:text-ink-300 transition active:scale-95"
+            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={dark ? 'Light Mode' : 'Dark Mode'}
+          >
+            {dark ? <Sun className="w-4 h-4 text-honey-400" /> : <Moon className="w-4 h-4" />}
           </button>
 
           {/* RevenueCat Subscriptions Button */}
@@ -124,5 +187,9 @@ export function TopBar() {
         </div>
       </div>
     </header>
+
+      {/* Site Search Modal */}
+      <SiteSearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
   );
 }

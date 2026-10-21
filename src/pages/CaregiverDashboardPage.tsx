@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { LoadingState, ErrorState, EmptyState } from '@/components/UI';
 import { CONDITIONS, type CareCondition } from '@/data/mockData';
+import { LastUpdatedDate } from '@/components/LastUpdatedDate';
 
 type Tab = 'overview' | 'reminders' | 'memories' | 'people' | 'activity';
 
@@ -124,7 +125,11 @@ export function CaregiverDashboardPage() {
             </div>
             <div>
               <p className="font-display font-extrabold text-ink-800 text-lg leading-tight">Helper Dashboard</p>
-              <p className="text-ink-400 text-sm leading-tight">Helping {patientName || 'Elena'} with their day</p>
+              <div className="flex items-center gap-3">
+                <p className="text-ink-400 text-sm leading-tight">Helping {patientName || 'Elena'} with their day</p>
+                {/* Item 18 – Last Updated Date */}
+                <LastUpdatedDate />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">

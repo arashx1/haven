@@ -32,6 +32,23 @@ body {
   font-family: 'Nunito', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.dark body {
+  background-color: #1A1613;
+  color: #EDE7E0;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #1A1613;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3F372F;
+  border: 3px solid #1A1613;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #544A40;
 }
 
 *:focus-visible {
@@ -57,34 +74,77 @@ body {
 
 @layer components {
   .card-base {
-    @apply bg-white rounded-3xl shadow-card transition-all duration-300;
+    @apply bg-white dark:bg-ink-900/90 rounded-3xl shadow-card transition-all duration-300 border border-cream-200/80 dark:border-ink-800;
   }
   .card-hover {
-    @apply hover:shadow-lift hover:-translate-y-1 cursor-pointer;
+    @apply hover:shadow-lift hover:-translate-y-1 hover:border-honey-300 dark:hover:border-honey-600 cursor-pointer transition-all duration-200;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-3 bg-honey-500 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-warm transition-all duration-200 hover:bg-honey-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-3 bg-honey-500 hover:bg-honey-600 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-warm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-3 bg-cream-100 text-ink-700 font-bold rounded-2xl px-8 py-5 text-xl border-2 border-cream-300 transition-all duration-200 hover:bg-cream-200 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-3 bg-cream-100 hover:bg-cream-200 dark:bg-ink-800 dark:hover:bg-ink-700 text-ink-700 dark:text-ink-100 font-bold rounded-2xl px-8 py-5 text-xl border-2 border-cream-300 dark:border-ink-700 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer;
   }
   .btn-success {
-    @apply inline-flex items-center justify-center gap-3 bg-sage-500 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-soft transition-all duration-200 hover:bg-sage-600 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-3 bg-sage-500 hover:bg-sage-600 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] cursor-pointer;
   }
   .btn-help {
-    @apply inline-flex items-center justify-center gap-3 bg-coral-500 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-soft transition-all duration-200 hover:bg-coral-600 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-3 bg-coral-500 hover:bg-coral-600 text-white font-bold rounded-2xl px-8 py-5 text-xl shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] cursor-pointer;
   }
   .nav-item {
-    @apply flex flex-col items-center justify-center gap-1.5 px-2 py-2 rounded-2xl transition-all duration-200 min-w-[64px];
+    @apply flex flex-col items-center justify-center gap-1.5 px-2 py-2 rounded-2xl transition-all duration-200 min-w-[64px] cursor-pointer;
   }
   .nav-item-active {
-    @apply bg-honey-100 text-honey-700;
+    @apply bg-honey-100 dark:bg-honey-900/40 text-honey-700 dark:text-honey-300;
   }
   .nav-item-inactive {
-    @apply text-ink-500 hover:bg-cream-200 hover:text-ink-700;
+    @apply text-ink-500 hover:bg-cream-200 dark:hover:bg-ink-800 hover:text-ink-700 dark:hover:text-ink-200;
   }
   .section-title {
-    @apply font-display font-extrabold text-ink-800;
+    @apply font-display font-extrabold text-ink-800 dark:text-ink-50;
+  }
+}
+
+/* Print Stylesheet (Item 10) */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+
+  /* Hide screen-only interactive elements */
+  header,
+  nav,
+  aside,
+  button:not(.print-allow),
+  .no-print,
+  .print-hidden,
+  [aria-label="Ask a family member for help"],
+  [aria-label="Back to top"],
+  [aria-label="Floating Contact Button"] {
+    display: none !important;
+  }
+
+  /* Expand full width for clean reading */
+  main, .card-base {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    max-width: 100% !important;
+    padding: 1rem !important;
+    margin: 0 0 1rem 0 !important;
+  }
+
+  a {
+    text-decoration: underline !important;
+    color: #000000 !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
   }
 }
 
