@@ -159,3 +159,40 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   white-space: nowrap;
   border: 0;
 }
+
+/* Calm, consistent surfaces and accessible controls. */
+@layer components {
+  .field-label { @apply block font-bold text-ink-700; }
+  .field-input { @apply block w-full mt-2 px-4 py-3 rounded-xl border-2 border-cream-300 bg-white text-ink-800 font-normal focus:border-honey-600; }
+  .icon-button { @apply min-w-[48px] min-h-[48px] inline-flex items-center justify-center rounded-xl hover:bg-cream-200 border border-transparent; }
+  .eyebrow { @apply text-sm uppercase tracking-widest font-extrabold text-honey-700; }
+  .brand-mark { @apply w-12 h-12 rounded-2xl bg-honey-700 text-white inline-flex items-center justify-center text-4xl font-display font-bold; }
+  .notice { @apply p-4 rounded-xl border border-sage-300 bg-sage-50 text-sage-800; }
+  .error-message { @apply p-4 rounded-xl border border-coral-300 bg-coral-50 text-coral-800; }
+  .empty-card { @apply rounded-2xl border-2 border-dashed border-cream-300 p-8 text-center text-ink-600; }
+  .care-tab { @apply px-5 py-3 rounded-xl border border-cream-300 text-ink-700 font-bold; }
+  .care-tab.active { @apply bg-honey-700 text-white border-honey-700; }
+  .modal-backdrop { @apply fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/60; }
+  .modal-card { @apply bg-white rounded-3xl shadow-lift p-6 sm:p-8 w-full max-w-lg max-h-[90dvh] overflow-y-auto; }
+  .skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:p-4 focus:rounded-xl; }
+}
+.btn-primary { background-color: #974918; }
+.btn-primary:hover { background-color: #723916; }
+.btn-success { background-color: #466D51; }
+button:disabled { cursor: wait; opacity: .6; }
+button, a, input, select, textarea { touch-action: manipulation; }
+input, select, textarea { min-height: 48px; }
+main:focus { outline: none; }
+p, h1, h2, h3 { overflow-wrap: anywhere; }
+html.dark .modal-card, html.dark .field-input, html.dark .bg-white, html.dark .bg-cream-50, html.dark .bg-cream-100 { background-color: #1e1916; }
+html.dark .text-ink-800, html.dark .text-ink-900, html.dark .text-ink-700, html.dark .field-input, html.dark .field-label { color: #f7f4f1; }
+html.dark .text-ink-400, html.dark .text-ink-500, html.dark .text-ink-600 { color: #d8cfc4; }
+html.dark .eyebrow, html.dark .text-honey-700 { color: #edb074; }
+html.dark .border-cream-200, html.dark .border-cream-300, html.dark .field-input { border-color: #544a40; }
+html.dark .care-tab { color: #f7f4f1; }
+html.dark .notice { background: #283b2d; color: #e2eee5; }
+html.dark .error-message { background: #5c271d; color: #fae3dc; }
+nav.fixed { padding-bottom: env(safe-area-inset-bottom, 0px); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

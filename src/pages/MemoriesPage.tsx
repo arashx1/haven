@@ -41,7 +41,7 @@ export function MemoriesPage() {
               style={{ animationDelay: `${idx * 100}ms` }}
               onClick={() => navigate('memory-detail', { memoryId: memory.id })}
             >
-              {memory.image && memory.image.startsWith('data:') ? (
+              {memory.image && (memory.image.startsWith('data:image/') || memory.image.startsWith('https://')) ? (
                 <img src={memory.image} alt={memory.title} className="w-full aspect-[4/3] object-cover" />
               ) : (
                 <Illustration id={memory.image} className="w-full aspect-[4/3]" rounded="rounded-none" />

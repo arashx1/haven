@@ -1,13 +1,14 @@
+import { phoneHref } from '@/utils/reminders';
 import { useApp } from '@/context/AppContext';
 import { usePeople } from '@/hooks/usePeople';
-import { PageHeader, ErrorState } from '@/components/UI';
+import { PageHeader, ErrorState, LoadingState } from '@/components/UI';
 import { Illustration } from '@/components/Illustration';
 import { Phone, Volume2, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 
 export function PersonDetailPage() {
   const { selectedPersonId, goBack } = useApp();
-  const { people, error, refresh } = usePeople();
+  const { people, loading, error, refresh } = usePeople();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callNotice, setCallNotice] = useState<string | null>(null);
 
@@ -28,18 +29,12 @@ export function PersonDetailPage() {
   };
 
   const handleCall = () => {
-    if (!person) return;
-    setCallNotice(`Calling ${person.name} (${person.phone})...`);
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(`Calling ${person.name} now. Someone who loves you will answer.`);
-      utterance.rate = 0.88;
-      window.speechSynthesis.speak(utterance);
-    }
-    setTimeout(() => {
-      setCallNotice(null);
-    }, 4000);
+    const href = person && phoneHref(person.phone);
+    if (href) window.location.href = href;
+    else setCallNotice('No valid phone number is saved for this person. Add one in Care settings.');
   };
+
+  if (loading) return <LoadingState message="Loading…" />;
 
   if (error) {
     return (
@@ -68,13 +63,13 @@ export function PersonDetailPage() {
 
       {callNotice && (
         <div className="mb-4 p-4 rounded-2xl bg-sage-500 text-white font-bold text-center text-lg shadow-md animate-scaleIn flex items-center justify-center gap-2">
-          <Phone className="w-6 h-6 animate-bounce" />
+          <Phone className="w-6 h-6 " />
           <span>{callNotice}</span>
         </div>
       )}
 
       <div className="card-base overflow-hidden animate-scaleIn">
-        {person.image && person.image.startsWith('data:') ? (
+        {person.image && (person.image.startsWith('data:image/') || person.image.startsWith('https://')) ? (
           <img src={person.image} alt={person.name} className="w-full aspect-square sm:aspect-[4/3] object-cover object-top" />
         ) : (
           <Illustration id={person.image} label={person.name} className="w-full aspect-square sm:aspect-[4/3]" rounded="rounded-none" />
@@ -99,7 +94,7 @@ export function PersonDetailPage() {
               className="btn-primary flex-1 text-xl"
               aria-label="Listen to information"
             >
-              <Volume2 className={`w-7 h-7 ${isSpeaking ? 'animate-bounce text-yellow-200' : ''}`} />
+              <Volume2 className={`w-7 h-7 ${isSpeaking ? ' text-yellow-200' : ''}`} />
               {isSpeaking ? 'Listening...' : 'Listen'}
             </button>
           </div>

@@ -2,7 +2,7 @@ export type Language = 'en' | 'zh' | 'fr' | 'es' | 'hi' | 'bn' | 'as';
 
 export const LANGUAGES: { code: Language; label: string; nativeLabel: string }[] = [
   { code: 'en', label: 'English', nativeLabel: 'English' },
-  { code: 'zh', label: 'Chinese (Singapore)', nativeLabel: '简体中文' },
+  { code: 'zh', label: 'Chinese (Singapore)', nativeLabel: '中文' },
   { code: 'fr', label: 'French', nativeLabel: 'Français' },
   { code: 'es', label: 'Spanish', nativeLabel: 'Español' },
   { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी' },
@@ -43,7 +43,7 @@ export const CONDITIONS: ConditionInfo[] = [
   {
     id: 'parkinsons',
     title: 'Parkinson’s Disease & Mobility',
-    tagline: 'Strict medication alarms, motor support, and tremor-friendly touch.',
+    tagline: 'Daily routines and comfortable, large touch controls.',
     description: 'Optimized for Parkinson’s care with dopamine/levodopa exact-time alarms, hydration prompts, and high-contrast large buttons.',
     badge: 'Motor & Timing Precision',
     iconName: 'Activity',
@@ -59,7 +59,7 @@ export const CONDITIONS: ConditionInfo[] = [
     title: 'Post-Stroke & Aphasia Recovery',
     tagline: 'Visual communication cards, speech recovery, and cognitive rebuilding.',
     description: 'Designed for stroke survivors recovering speech and motor skills, featuring pictorial flashcards and daily speech exercises.',
-    badge: 'Speech & Cognitive Rehab',
+    badge: 'Speech & Everyday Communication',
     iconName: 'HeartPulse',
     color: 'coral',
     tips: [
@@ -104,6 +104,9 @@ export interface Reminder {
   time: string;
   description: string;
   done: boolean;
+  occurrenceDate?: string;
+  snoozedUntil?: string | null;
+  completedAt?: string | null;
   icon: string;
 }
 
@@ -146,138 +149,7 @@ export interface Patient {
   greetingName: string;
 }
 
-export const mockReminders: Reminder[] = [
-  {
-    id: 'r1',
-    type: 'medicine',
-    title: 'Take Your Medicine',
-    time: '9:00 AM',
-    description: 'Your morning medicine with water.',
-    done: false,
-    icon: 'pill',
-  },
-  {
-    id: 'r2',
-    type: 'meal',
-    title: 'Breakfast Time',
-    time: '9:30 AM',
-    description: 'Time for a healthy breakfast.',
-    done: false,
-    icon: 'utensils',
-  },
-  {
-    id: 'r3',
-    type: 'call',
-    title: 'Call Priya',
-    time: '11:00 AM',
-    description: 'Your daughter would love to hear from you.',
-    done: false,
-    icon: 'phone',
-  },
-  {
-    id: 'r4',
-    type: 'activity',
-    title: 'Play a Game',
-    time: '3:00 PM',
-    description: 'Enjoy a fun brain activity.',
-    done: false,
-    icon: 'gamepad',
-  },
-  {
-    id: 'r5',
-    type: 'meal',
-    title: 'Lunch Time',
-    time: '1:00 PM',
-    description: 'A warm, healthy lunch is ready.',
-    done: true,
-    icon: 'utensils',
-  },
-  {
-    id: 'r6',
-    type: 'medicine',
-    title: 'Evening Medicine',
-    time: '6:00 PM',
-    description: 'Your evening medicine with water.',
-    done: false,
-    icon: 'pill',
-  },
-];
-
-export const mockMemories: Memory[] = [
-  {
-    id: 'm1',
-    title: "Priya's Wedding",
-    description: 'A special day with your family.',
-    year: '2018',
-    image: 'family-wedding',
-    caption: 'This is your daughter Priya ❤️',
-    detail: 'This photo was taken on her wedding day. The whole family came together to celebrate.',
-  },
-  {
-    id: 'm2',
-    title: 'Trip to Kaziranga',
-    description: 'A beautiful journey to the national park.',
-    year: '2019',
-    image: 'kaziranga',
-    caption: 'You visited Kaziranga National Park 🌿',
-    detail: 'You saw the one-horned rhinoceros and many beautiful birds. It was a sunny, happy day.',
-  },
-  {
-    id: 'm3',
-    title: 'Festival of Bihu',
-    description: 'Celebrating with friends and family.',
-    year: '2021',
-    image: 'bihu',
-    caption: 'You celebrated Bihu with your community 🎉',
-    detail: 'Everyone danced and shared food. You wore your finest traditional clothes.',
-  },
-  {
-    id: 'm4',
-    title: 'Grandchild Born',
-    description: 'A new member of the family.',
-    year: '2020',
-    image: 'grandchild',
-    caption: 'This is your grandchild, Aarav 👶',
-    detail: 'He was born in the morning. You held him in your arms and he smiled at you.',
-  },
-];
-
-export const mockPeople: Person[] = [
-  {
-    id: 'p1',
-    name: 'Priya',
-    relationship: 'Your Daughter ❤️',
-    image: 'priya',
-    info: 'Priya is your daughter. She lives with her family in Guwahati. She loves cooking and gardening.',
-    phone: '+91 98XXX XXX21',
-  },
-  {
-    id: 'p2',
-    name: 'Rohan',
-    relationship: 'Your Son ❤️',
-    image: 'rohan',
-    info: 'Rohan is your son. He works as a teacher. He visits you every weekend.',
-    phone: '+91 98XXX XXX45',
-  },
-  {
-    id: 'p3',
-    name: 'Aarav',
-    relationship: 'Your Grandchild 👶',
-    image: 'aarav',
-    info: 'Aarav is your grandchild. He is 4 years old. He loves drawing and playing with you.',
-    phone: '+91 98XXX XX78',
-  },
-  {
-    id: 'p4',
-    name: 'Meena',
-    relationship: 'Your Caregiver 🤝',
-    image: 'meena',
-    info: 'Meena helps you every day. She is kind and patient. She makes sure you are safe and happy.',
-    phone: '+91 98XXX XX90',
-  },
-];
-
-export const mockGames: Game[] = [
+export const activityCatalog: Game[] = [
   // Category 1: Memory & Reminiscence
   {
     id: 'g1',

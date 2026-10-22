@@ -1,3 +1,4 @@
+import { useTimeouts } from '@/hooks/useTimeouts';
 import { useState } from 'react';
 import { playTapSound, playSuccessChime } from '@/utils/audio';
 import { Trophy, Sparkles, RotateCcw, Check } from 'lucide-react';
@@ -15,6 +16,7 @@ const STEPS_DATA: Step[] = [
 ];
 
 export function RoutineOrderGame({ onFinish }: { onFinish: () => void }) {
+  const { schedule, clear } = useTimeouts();
   const [selectedSteps, setSelectedSteps] = useState<number[]>([]);
   const [availableSteps, setAvailableSteps] = useState<Step[]>(() =>
     [...STEPS_DATA].sort(() => Math.random() - 0.5)
@@ -37,11 +39,12 @@ export function RoutineOrderGame({ onFinish }: { onFinish: () => void }) {
       }
     } else {
       setErrorMsg('Try another step first!');
-      setTimeout(() => setErrorMsg(null), 1800);
+      schedule(() => setErrorMsg(null), 1800);
     }
   };
 
   const restart = () => {
+    clear();
     setSelectedSteps([]);
     setAvailableSteps([...STEPS_DATA].sort(() => Math.random() - 0.5));
     setErrorMsg(null);

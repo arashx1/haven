@@ -1,3 +1,4 @@
+import { useTimeouts } from '@/hooks/useTimeouts';
 import { useState } from 'react';
 import { playTapSound, playSuccessChime } from '@/utils/audio';
 import { Volume2, Trophy, Sparkles, RotateCcw } from 'lucide-react';
@@ -40,6 +41,7 @@ const SENTENCES: SentenceItem[] = [
 ];
 
 export function SentenceBuilderGame({ onFinish }: { onFinish: () => void }) {
+  const { schedule, clear } = useTimeouts();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -65,7 +67,7 @@ export function SentenceBuilderGame({ onFinish }: { onFinish: () => void }) {
     if (correct) {
       playSuccessChime();
       speak(current.completedText);
-      setTimeout(() => {
+      schedule(() => {
         if (currentIdx + 1 < SENTENCES.length) {
           setCurrentIdx((prev) => prev + 1);
           setSelected(null);
@@ -75,7 +77,7 @@ export function SentenceBuilderGame({ onFinish }: { onFinish: () => void }) {
         }
       }, 1600);
     } else {
-      setTimeout(() => {
+      schedule(() => {
         setSelected(null);
         setIsCorrect(null);
       }, 1200);
@@ -83,6 +85,7 @@ export function SentenceBuilderGame({ onFinish }: { onFinish: () => void }) {
   };
 
   const restart = () => {
+    clear();
     setCurrentIdx(0);
     setSelected(null);
     setIsCorrect(null);

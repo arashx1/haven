@@ -1,3 +1,4 @@
+import { useTimeouts } from '@/hooks/useTimeouts';
 import { useState } from 'react';
 import { playTapSound, playSuccessChime } from '@/utils/audio';
 import { RotateCcw, Trophy, Sparkles } from 'lucide-react';
@@ -24,6 +25,7 @@ function generateDeck(): CardItem[] {
 }
 
 export function MemoryMatchGame({ onFinish }: { onFinish: () => void }) {
+  const { schedule, clear } = useTimeouts();
   const [cards, setCards] = useState<CardItem[]>(generateDeck);
   const [flipped, setFlipped] = useState<number[]>([]);
   const [isWon, setIsWon] = useState(false);
@@ -39,11 +41,11 @@ export function MemoryMatchGame({ onFinish }: { onFinish: () => void }) {
       const [first, second] = newFlipped;
       if (cards[first].emoji === cards[second].emoji) {
         // Matched!
-        setTimeout(() => {
+        schedule(() => {
           setCards((prev) => {
             const next = [...prev];
-            next[first].matched = true;
-            next[second].matched = true;
+            next[first] = { ...next[first], matched: true };
+            next[second] = { ...next[second], matched: true };
             if (next.every((c) => c.matched)) {
               setIsWon(true);
               playSuccessChime();
@@ -54,7 +56,7 @@ export function MemoryMatchGame({ onFinish }: { onFinish: () => void }) {
         }, 500);
       } else {
         // Not matched
-        setTimeout(() => {
+        schedule(() => {
           setFlipped([]);
         }, 1100);
       }
@@ -62,6 +64,7 @@ export function MemoryMatchGame({ onFinish }: { onFinish: () => void }) {
   };
 
   const restart = () => {
+    clear();
     setCards(generateDeck());
     setFlipped([]);
     setIsWon(false);

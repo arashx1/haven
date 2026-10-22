@@ -2,7 +2,7 @@ import { PageHeader, SuccessToast, LoadingState, ErrorState } from '@/components
 import { GameThumbnail } from '@/components/Illustration';
 import { useGames } from '@/hooks/useGames';
 import { useApp } from '@/context/AppContext';
-import type { GameCategory } from '@/data/mockData';
+import type { GameCategory } from '@/data/catalog';
 import {
   Puzzle,
   Users,
@@ -15,10 +15,9 @@ import {
   ArrowLeft,
   CheckCircle,
   Heart,
-  Star,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+
 
 // Interactive mini-game components
 import { MemoryMatchGame } from '@/components/games/MemoryMatchGame';
@@ -58,9 +57,9 @@ const CATEGORIES: CategoryTab[] = [
   { id: 'zen', label: 'Peace & Calm', emoji: '🌸', conditionHint: 'healthy_aging' },
 ];
 
-export function PlayPage({ onUpgrade }: { onUpgrade?: () => void }) {
+export function PlayPage() {
   const { games, loading, error } = useGames();
-  const { isPro } = useSubscription();
+
 
   const { careCondition } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<'all' | GameCategory>('all');
@@ -94,34 +93,6 @@ export function PlayPage({ onUpgrade }: { onUpgrade?: () => void }) {
         }
         showBack={false}
       />
-
-      {/* RevenueCat upgrade banner (shown to free users only) */}
-      {!isPro && !playingGameId && (
-        <div
-          className="rounded-2xl mb-4 p-4 flex items-center gap-4"
-          style={{ background: 'linear-gradient(135deg,#fef3c7,#fde68a)', border: '2px solid #f59e0b' }}
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
-            <Star className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-bold text-amber-900 text-sm">Unlock all games with Haven Plus</p>
-              <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                1 Month Free
-              </span>
-            </div>
-            <p className="text-amber-800 text-xs">Try all games, memories &amp; caregiver tools free for 30 days. Cancel anytime.</p>
-          </div>
-          <button
-            type="button"
-            onClick={onUpgrade}
-            style={{ cursor: 'pointer', padding: '8px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: 'white', fontWeight: 700, fontSize: '13px', border: 'none', whiteSpace: 'nowrap' }}
-          >
-            Try 1 Month Free
-          </button>
-        </div>
-      )}
 
       {/* Active Game Player Frame */}
 

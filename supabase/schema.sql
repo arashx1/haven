@@ -1,4 +1,4 @@
--- Sahyog database schema
+-- Haven base database schema
 -- Run this once in your Supabase project's SQL Editor
 -- (Dashboard -> SQL Editor -> New query -> paste -> Run).
 -- Safe to re-run: uses IF NOT EXISTS / OR REPLACE / guarded seeds.
@@ -130,12 +130,5 @@ create policy "Signed-in users can view games"
   on public.games for select
   using (auth.role() = 'authenticated');
 
--- Seed the three starter games, only if the table is empty.
-insert into public.games (title, description, icon, gradient)
-select * from (
-  values
-    ('Picture Matching', 'Match the pictures together.', 'puzzle', 'from-honey-300 to-honey-500'),
-    ('Familiar Faces', 'Can you recognize the people you know?', 'users', 'from-sage-300 to-sage-500'),
-    ('Memory Puzzle', 'Complete the picture.', 'palette', 'from-coral-300 to-coral-500')
-) as seed(title, description, icon, gradient)
-where not exists (select 1 from public.games);
+
+-- Apply migrations/20261022_production_care.sql after this base schema.

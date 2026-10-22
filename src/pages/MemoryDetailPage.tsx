@@ -1,13 +1,13 @@
 import { useApp } from '@/context/AppContext';
 import { useMemories } from '@/hooks/useMemories';
-import { PageHeader, ErrorState } from '@/components/UI';
+import { PageHeader, ErrorState, LoadingState } from '@/components/UI';
 import { Illustration } from '@/components/Illustration';
 import { Volume2, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 
 export function MemoryDetailPage() {
   const { selectedMemoryId, goBack } = useApp();
-  const { memories, error, refresh } = useMemories();
+  const { memories, loading, error, refresh } = useMemories();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const memory = memories.find((m) => m.id === selectedMemoryId);
 
@@ -23,6 +23,8 @@ export function MemoryDetailPage() {
       window.speechSynthesis.speak(utterance);
     }
   };
+
+  if (loading) return <LoadingState message="Loading…" />;
 
   if (error) {
     return (
@@ -50,7 +52,7 @@ export function MemoryDetailPage() {
       <PageHeader title={memory.title} subtitle={memory.year} />
 
       <div className="card-base overflow-hidden animate-scaleIn">
-        {memory.image && memory.image.startsWith('data:') ? (
+        {memory.image && (memory.image.startsWith('data:image/') || memory.image.startsWith('https://')) ? (
           <img src={memory.image} alt={memory.title} className="w-full aspect-[4/3] object-cover" />
         ) : (
           <Illustration id={memory.image} label={memory.title} className="w-full aspect-[4/3]" rounded="rounded-none" />

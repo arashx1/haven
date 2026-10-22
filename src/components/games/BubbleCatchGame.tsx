@@ -1,3 +1,4 @@
+import { useTimeouts } from '@/hooks/useTimeouts';
 import { useState } from 'react';
 import { playTapSound, playSuccessChime } from '@/utils/audio';
 import { Trophy, Sparkles, RotateCcw } from 'lucide-react';
@@ -30,6 +31,7 @@ function generateBubbles(): Bubble[] {
 }
 
 export function BubbleCatchGame({ onFinish }: { onFinish: () => void }) {
+  const { schedule, clear } = useTimeouts();
   const [bubbles, setBubbles] = useState<Bubble[]>(generateBubbles);
   const [poppedCount, setPoppedCount] = useState(0);
   const [completed, setCompleted] = useState(false);
@@ -44,11 +46,12 @@ export function BubbleCatchGame({ onFinish }: { onFinish: () => void }) {
 
     if (nextCount >= bubbles.length) {
       playSuccessChime();
-      setTimeout(() => setCompleted(true), 400);
+      schedule(() => setCompleted(true), 400);
     }
   };
 
   const restart = () => {
+    clear();
     setBubbles(generateBubbles());
     setPoppedCount(0);
     setCompleted(false);

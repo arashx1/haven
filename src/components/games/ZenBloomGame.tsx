@@ -1,3 +1,4 @@
+import { useTimeouts } from '@/hooks/useTimeouts';
 import { useState } from 'react';
 import { playTapSound, playSuccessChime } from '@/utils/audio';
 import { Sparkles, Trophy, RotateCcw, Heart } from 'lucide-react';
@@ -19,6 +20,7 @@ const PETALS_DATA: Omit<Petal, 'bloomed'>[] = [
 ];
 
 export function ZenBloomGame({ onFinish }: { onFinish: () => void }) {
+  const { schedule, clear } = useTimeouts();
   const [petals, setPetals] = useState<Petal[]>(() =>
     PETALS_DATA.map((p) => ({ ...p, bloomed: false }))
   );
@@ -39,11 +41,12 @@ export function ZenBloomGame({ onFinish }: { onFinish: () => void }) {
 
     if (updated.every((p) => p.bloomed)) {
       playSuccessChime();
-      setTimeout(() => setCompleted(true), 1200);
+      schedule(() => setCompleted(true), 1200);
     }
   };
 
   const restart = () => {
+    clear();
     setPetals(PETALS_DATA.map((p) => ({ ...p, bloomed: false })));
     setActiveAffirmation('Tap any petal to bloom your garden and discover peace.');
     setCompleted(false);

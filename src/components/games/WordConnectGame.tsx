@@ -1,3 +1,4 @@
+import { useTimeouts } from '@/hooks/useTimeouts';
 import { useState } from 'react';
 import { playTapSound, playSuccessChime } from '@/utils/audio';
 import { Volume2, Trophy, Sparkles, RotateCcw } from 'lucide-react';
@@ -42,6 +43,7 @@ const ITEMS: WordCard[] = [
 ];
 
 export function WordConnectGame({ onFinish }: { onFinish: () => void }) {
+  const { schedule, clear } = useTimeouts();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -67,7 +69,7 @@ export function WordConnectGame({ onFinish }: { onFinish: () => void }) {
     if (correct) {
       playSuccessChime();
       speakWord(current.word);
-      setTimeout(() => {
+      schedule(() => {
         if (currentIdx + 1 < ITEMS.length) {
           setCurrentIdx((prev) => prev + 1);
           setSelected(null);
@@ -77,7 +79,7 @@ export function WordConnectGame({ onFinish }: { onFinish: () => void }) {
         }
       }, 1500);
     } else {
-      setTimeout(() => {
+      schedule(() => {
         setSelected(null);
         setIsCorrect(null);
       }, 1200);
@@ -85,6 +87,7 @@ export function WordConnectGame({ onFinish }: { onFinish: () => void }) {
   };
 
   const restart = () => {
+    clear();
     setCurrentIdx(0);
     setSelected(null);
     setIsCorrect(null);

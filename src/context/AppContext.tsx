@@ -1,317 +1,116 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from 'react';
-import { type Language, type TextScale, type CareCondition } from '@/data/mockData';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { LANGUAGES, CONDITIONS, type Language, type TextScale, type CareCondition } from '@/data/catalog';
 import i18n from '@/i18n';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured, errorMessage } from '@/lib/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
-import { initRevenueCat } from '@/lib/revenuecat';
 
-export type Route =
-  | 'my-day'
-  | 'play'
-  | 'memories'
-  | 'memory-detail'
-  | 'people'
-  | 'person-detail'
-  | 'help'
-  | 'reminder'
-  | 'signup'
-  | 'login'
-  | 'onboarding'
-  | 'caregiver-dashboard'
-  | 'demo';
-
-export type AuthState = 'guest' | 'authenticated' | 'onboarding';
-
-export type OnboardingStep = 0 | 1 | 2 | 3 | 4 | 5;
-
-interface AppState {
-  route: Route;
-  navigate: (route: Route, params?: Record<string, string>) => void;
-  goBack: () => void;
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  textScale: TextScale;
-  setTextScale: (scale: TextScale) => void;
-  selectedMemoryId: string | null;
-  selectedPersonId: string | null;
-  activeReminderId: string | null;
-  setActiveReminderId: (id: string | null) => void;
-  patientName: string;
-  setPatientName: (name: string) => void;
-  authState: AuthState;
-  setAuthState: (state: AuthState) => void;
-  onboardingStep: OnboardingStep;
-  setOnboardingStep: (step: OnboardingStep) => void;
-  isCaregiverMode: boolean;
-  setCaregiverMode: (val: boolean) => void;
-  session: Session | null;
-  authLoading: boolean;
-  signOut: () => Promise<void>;
-  loginWithDemo: (usernameOrEmail?: string) => void;
-  careCondition: CareCondition;
-  setCareCondition: (c: CareCondition) => void;
-  // Auth gate modal (for demo mode feature lock)
-  authGateOpen: boolean;
-  authGateFeature: string;
-  openAuthGate: (feature?: string) => void;
-  closeAuthGate: () => void;
-  // RevenueCat Paywall modal
-  paywallOpen: boolean;
-  openPaywall: () => void;
-  closePaywall: () => void;
+export type Route = 'my-day' | 'play' | 'memories' | 'memory-detail' | 'people' | 'person-detail' | 'help' | 'signup' | 'login' | 'onboarding' | 'caregiver-dashboard';
+export type AuthState = 'guest' | 'authenticated';
+export interface CareProfile { id: string; full_name: string; care_condition: CareCondition; timezone: string; }
+const routes: Route[] = ['my-day','play','memories','memory-detail','people','person-detail','help','signup','login','onboarding','caregiver-dashboard'];
+function readLocation() {
+  const [name, query] = location.hash.slice(1).split('?');
+  return { route: routes.includes(name as Route) ? name as Route : 'my-day' as Route, params: Object.fromEntries(new URLSearchParams(query)) };
 }
-
+function preference(key: string, fallback: string) { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } }
+interface AppState {
+  route: Route; navigate: (route: Route, params?: Record<string,string>) => void; goBack: () => void;
+  language: Language; setLanguage: (language: Language) => void;
+  textScale: TextScale; setTextScale: (size: TextScale) => void;
+  session: Session | null; authState: AuthState; authLoading: boolean; signOut: () => Promise<void>;
+  patientName: string; careCondition: CareCondition; setCareCondition: (value: CareCondition) => Promise<void>;
+  patientId: string; profiles: CareProfile[]; selectPatient: (id: string) => void; refreshProfiles: () => Promise<void>;
+  timezone: string; profileError: string; updateProfile: (values: Partial<Pick<CareProfile,'full_name'|'care_condition'|'timezone'>>) => Promise<void>;
+  isCaregiverMode: boolean; setCaregiverMode: (value: boolean) => void;
+  selectedMemoryId: string | null; selectedPersonId: string | null;
+  paywallOpen: boolean; openPaywall: () => void; closePaywall: () => void;
+}
 const AppContext = createContext<AppState | null>(null);
-
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [route, setRoute] = useState<Route>('login');
-  const [, setHistory] = useState<Route[]>([]);
-  const [params, setParams] = useState<Record<string, string>>({});
-  const [language, setLanguage] = useState<Language>('en');
-  const [textScale, setTextScale] = useState<TextScale>(2);
-  const [activeReminderId, setActiveReminderId] = useState<string | null>(null);
-  const [patientName, setPatientName] = useState('');
-  const [authState, setAuthState] = useState<AuthState>('guest');
-  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(0);
-  const [isCaregiverMode, setIsCaregiverMode] = useState(false);
+  const [locationState, setLocationState] = useState(readLocation);
   const [session, setSession] = useState<Session | null>(null);
+  const currentUser = useRef<string | null>(null);
+  currentUser.current = session?.user.id || null;
   const [authLoading, setAuthLoading] = useState(true);
-  const [authGateOpen, setAuthGateOpen] = useState(false);
-  const [authGateFeature, setAuthGateFeature] = useState('');
+  const [profiles, setProfiles] = useState<CareProfile[]>([]);
+  const [patientId, setPatientId] = useState('');
+  const [profileError, setProfileError] = useState('');
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const [careCondition, setCareConditionState] = useState<CareCondition>(() => {
-    return (localStorage.getItem('haven_care_condition') as CareCondition) || 'dementia';
+  const [isCaregiverMode, setCaregiverMode] = useState(false);
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = preference('language','en');
+    return LANGUAGES.some(l => l.code === saved) ? saved as Language : 'en';
   });
-
-  const setCareCondition = (c: CareCondition) => {
-    setCareConditionState(c);
-    localStorage.setItem('haven_care_condition', c);
-  };
-
-  // Pull the display name from the profiles table (created automatically
-  // on signup by a DB trigger — see supabase/schema.sql).
-  const loadProfile = async (userId: string, fallbackName?: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', userId)
-      .maybeSingle();
-    if (data?.full_name) {
-      setPatientName(data.full_name);
-    } else if (fallbackName) {
-      setPatientName(fallbackName);
-    }
-  };
-
-  // Check for existing demo user or Supabase session on load
-  useEffect(() => {
-    let active = true;
-
-    // First check local demo user storage
-    const savedDemo = localStorage.getItem('haven_demo_user');
-    if (savedDemo) {
-      try {
-        const parsed = JSON.parse(savedDemo);
-        if (parsed?.name) {
-          setPatientName(parsed.name);
-          setAuthState('authenticated');
-          setRoute('my-day');
-          setSession({
-            access_token: 'demo-token',
-            user: {
-              id: 'demo-user',
-              email: parsed.email || 'demo@haven.app',
-              user_metadata: { full_name: parsed.name },
-            },
-          } as unknown as Session);
-          setAuthLoading(false);
-          return;
-        }
-      } catch {
-        // ignore malformed stored demo user
-      }
-    }
-
-    supabase.auth
-      .getSession()
-      .then(({ data: { session: initialSession } }) => {
-        if (!active) return;
-        setSession(initialSession);
-        if (initialSession) {
-          setAuthState('authenticated');
-          setRoute('my-day');
-          loadProfile(initialSession.user.id, initialSession.user.user_metadata?.full_name);
-          initRevenueCat(initialSession.user.id);
-        }
-        setAuthLoading(false);
-      })
-      .catch(() => {
-        if (active) setAuthLoading(false);
-      });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      if (newSession) {
-        localStorage.removeItem('haven_demo_user');
-        setAuthState((prev) => (prev === 'onboarding' ? prev : 'authenticated'));
-        loadProfile(newSession.user.id, newSession.user.user_metadata?.full_name);
-        initRevenueCat(newSession.user.id);
-      } else {
-        const hasDemo = localStorage.getItem('haven_demo_user');
-        if (!hasDemo) {
-          setAuthState('guest');
-          setPatientName('');
-        }
-      }
-    });
-
-    return () => {
-      active = false;
-      listener?.subscription?.unsubscribe();
-    };
+  const [textScale, setTextScaleState] = useState<TextScale>(() => Math.max(1,Math.min(4, Number(preference('haven_text_size','2')) || 2)) as TextScale);
+  const navigate = useCallback((route: Route, params: Record<string,string> = {}) => {
+    const search = new URLSearchParams(params).toString();
+    location.hash = route + (search ? '?' + search : '');
+    window.scrollTo({ top: 0 });
   }, []);
-
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('text-scale-1', 'text-scale-2', 'text-scale-3', 'text-scale-4');
-    root.classList.add(`text-scale-${textScale}`);
-  }, [textScale]);
-
+    const handler = () => setLocationState(readLocation());
+    window.addEventListener('hashchange',handler);
+    return () => window.removeEventListener('hashchange',handler);
+  }, []);
   useEffect(() => {
-    i18n.changeLanguage(language);
-  }, [language]);
-
-  const navigate = (newRoute: Route, newParams: Record<string, string> = {}) => {
-    setHistory((h) => [...h, route]);
-    setRoute(newRoute);
-    setParams(newParams);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const goBack = () => {
-    setHistory((h) => {
-      if (h.length === 0) {
-        setRoute('my-day');
-        return h;
-      }
-      const prev = h[h.length - 1];
-      setRoute(prev);
-      return h.slice(0, -1);
+    if (!isSupabaseConfigured) { setAuthLoading(false); return; }
+    let alive = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (alive) { setSession(next); setAuthLoading(false); }
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (alive) { if (error) setProfileError(error.message); setSession(data.session); setAuthLoading(false); }
+    }).catch(e => { if (alive) { setProfileError(errorMessage(e)); setAuthLoading(false); } });
+    return () => { alive = false; subscription.unsubscribe(); };
+  }, []);
+  const refreshProfiles = useCallback(async () => {
+    if (!session) return;
+    const { data, error } = await supabase.from('profiles').select('id,full_name,care_condition,timezone').order('created_at');
+    if (currentUser.current !== session.user.id) return;
+    if (error) { setProfileError('Could not load care profiles: ' + error.message); return; }
+    const available = (data || []) as CareProfile[];
+    setProfiles(available);
+    setPatientId(current => available.some(p => p.id === current) ? current : session.user.id);
+    setProfileError(available.length ? '' : 'Your care profile is missing. Please contact the app administrator.');
+  }, [session?.user.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setProfiles([]); setPatientId(session?.user.id || ''); setPaywallOpen(false);
+    setProfileError('');
+    if (session) void refreshProfiles();
+  }, [session?.user.id, refreshProfiles]); // eslint-disable-line react-hooks/exhaustive-deps
+  const profile = profiles.find(p => p.id === patientId);
+  const updateProfile = async (values: Partial<Pick<CareProfile,'full_name'|'care_condition'|'timezone'>>) => {
+    if (!session || patientId !== session.user.id) throw new Error('Only the account owner can change these settings.');
+    if (values.care_condition && !CONDITIONS.some(c => c.id === values.care_condition)) throw new Error('Choose a valid care focus.');
+    if (values.timezone) new Intl.DateTimeFormat('en', { timeZone: values.timezone }).format();
+    const { error } = await supabase.from('profiles').update(values).eq('id',patientId).select('id').single();
+    if (error) throw error;
+    await refreshProfiles();
   };
-
-  const loginWithDemo = (usernameOrEmail?: string) => {
-    let cleanName = (usernameOrEmail || 'Elena Vance').trim();
-    if (cleanName.includes('@')) {
-      cleanName = cleanName.split('@')[0];
-    }
-    const formattedName =
-      cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-
-    const email = usernameOrEmail?.includes('@')
-      ? usernameOrEmail
-      : `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'}@haven.app`;
-
-    const demoUser = {
-      id: 'demo-user-123',
-      email,
-      user_metadata: { full_name: formattedName },
-    };
-
-    const demoSession = {
-      access_token: 'haven-demo-session-token',
-      user: demoUser,
-    } as unknown as Session;
-
-    localStorage.setItem(
-      'haven_demo_user',
-      JSON.stringify({ name: formattedName, email })
-    );
-
-    setSession(demoSession);
-    setPatientName(formattedName);
-    setAuthState('authenticated');
-    setIsCaregiverMode(false);
-    setRoute('my-day');
-  };
-
+  useEffect(() => { i18n.changeLanguage(language); document.documentElement.lang = language; try { localStorage.setItem('language',language); } catch { /* preference storage unavailable */ } }, [language]);
+  useEffect(() => {
+    document.documentElement.classList.remove('text-scale-1','text-scale-2','text-scale-3','text-scale-4');
+    document.documentElement.classList.add('text-scale-' + textScale);
+    try { localStorage.setItem('haven_text_size',String(textScale)); } catch { /* preference storage unavailable */ }
+  }, [textScale]);
   const signOut = async () => {
-    localStorage.removeItem('haven_demo_user');
-    localStorage.removeItem('haven_mock_session');
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // ignore signOut error
-    }
-    setSession(null);
-    setPatientName('');
-    setAuthState('guest');
-    setIsCaregiverMode(false);
-    setHistory([]);
-    setAuthGateOpen(false);
-    setRoute('login');
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) { setProfileError(error.message); return; }
+    window.speechSynthesis?.cancel(); setSession(null); setProfiles([]); setPatientId(''); setPaywallOpen(false); navigate('login');
   };
-
-  const openAuthGate = (feature = 'use this feature') => {
-    setAuthGateFeature(feature);
-    setAuthGateOpen(true);
-  };
-
-  const closeAuthGate = () => {
-    setAuthGateOpen(false);
-    setAuthGateFeature('');
-  };
-
-  const openPaywall = () => setPaywallOpen(true);
-  const closePaywall = () => setPaywallOpen(false);
-
   const value: AppState = {
-    route,
-    navigate,
-    goBack,
-    language,
-    setLanguage,
-    textScale,
-    setTextScale,
-    selectedMemoryId: params.memoryId ?? null,
-    selectedPersonId: params.personId ?? null,
-    activeReminderId,
-    setActiveReminderId,
-    patientName,
-    setPatientName,
-    authState,
-    setAuthState,
-    onboardingStep,
-    setOnboardingStep,
-    isCaregiverMode,
-    setCaregiverMode: setIsCaregiverMode,
-    session,
-    authLoading,
-    signOut,
-    loginWithDemo,
-    authGateOpen,
-    authGateFeature,
-    openAuthGate,
-    closeAuthGate,
-    paywallOpen,
-    openPaywall,
-    closePaywall,
-    careCondition,
-    setCareCondition,
+    route: locationState.route, navigate, goBack: () => { if (history.length > 1) history.back(); else navigate('my-day'); },
+    session, authState: session ? 'authenticated' : 'guest', authLoading, signOut,
+    language, setLanguage: setLanguageState, textScale, setTextScale: setTextScaleState,
+    patientName: profile?.full_name || session?.user.user_metadata?.full_name || '',
+    careCondition: profile?.care_condition || 'dementia', setCareCondition: care_condition => updateProfile({care_condition}),
+    patientId, profiles, selectPatient: id => { if (profiles.some(p => p.id === id)) { setPatientId(id); navigate('caregiver-dashboard'); } },
+    refreshProfiles, profileError, updateProfile, timezone: profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    isCaregiverMode, setCaregiverMode,
+    selectedMemoryId: locationState.params.memoryId || null, selectedPersonId: locationState.params.personId || null,
+    paywallOpen, openPaywall: () => setPaywallOpen(true), closePaywall: () => setPaywallOpen(false),
   };
-
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
-
-export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useApp must be used within AppProvider');
-  return ctx;
-}
+// eslint-disable-next-line react-refresh/only-export-components
+export function useApp() { const context = useContext(AppContext); if (!context) throw new Error('AppProvider is missing.'); return context; }

@@ -1,55 +1,21 @@
-// Gentle Web Audio API synthesizer for elderly-friendly feedback
-// Safe and silent if audio context is blocked or unavailable
-
-export function playTapSound() {
-  try {
-    const AudioContext = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.08);
-
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.09);
-  } catch {
-    // Ignore audio permission or context restrictions
-  }
+let context:AudioContext|null=null;
+function getContext(){
+ const Constructor=window.AudioContext||(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext;
+ if(!Constructor)return null;
+ if(!context||context.state==='closed')context=new Constructor();
+ if(context.state==='suspended')void context.resume().catch(()=>undefined);
+ return context;
 }
-
-export function playSuccessChime() {
-  try {
-    const AudioContext = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
-    notes.forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const startTime = ctx.currentTime + idx * 0.12;
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, startTime);
-
-      gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.12, startTime + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.55);
-    });
-  } catch {
-    // Ignore
-  }
+function tone(frequency:number,delay:number,duration:number){
+ try{
+  const ctx=getContext();if(!ctx)return;
+  const oscillator=ctx.createOscillator(),gain=ctx.createGain(),start=ctx.currentTime+delay;
+  oscillator.type='sine';oscillator.frequency.setValueAtTime(frequency,start);
+  gain.gain.setValueAtTime(.06,start);gain.gain.exponentialRampToValueAtTime(.001,start+duration);
+  oscillator.connect(gain);gain.connect(ctx.destination);
+  oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+  oscillator.start(start);oscillator.stop(start+duration);
+ }catch{/* Audio is optional. */}
 }
+export function playTapSound(){tone(440,0,.09);}
+export function playSuccessChime(){[523.25,659.25,783.99].forEach((frequency,index)=>tone(frequency,index*.12,.4));}

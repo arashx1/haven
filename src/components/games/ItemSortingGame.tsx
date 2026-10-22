@@ -1,3 +1,4 @@
+import { useTimeouts } from '@/hooks/useTimeouts';
 import { useState } from 'react';
 import { playTapSound, playSuccessChime } from '@/utils/audio';
 import { Trophy, Sparkles, RotateCcw } from 'lucide-react';
@@ -23,6 +24,7 @@ const ROOMS: { name: 'Bathroom' | 'Kitchen' | 'Bedroom'; label: string; icon: st
 ];
 
 export function ItemSortingGame({ onFinish }: { onFinish: () => void }) {
+  const { schedule, clear } = useTimeouts();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -38,7 +40,7 @@ export function ItemSortingGame({ onFinish }: { onFinish: () => void }) {
 
     if (correct) {
       playSuccessChime();
-      setTimeout(() => {
+      schedule(() => {
         if (currentIdx + 1 < ITEMS.length) {
           setCurrentIdx((prev) => prev + 1);
           setSelectedRoom(null);
@@ -48,7 +50,7 @@ export function ItemSortingGame({ onFinish }: { onFinish: () => void }) {
         }
       }, 1200);
     } else {
-      setTimeout(() => {
+      schedule(() => {
         setSelectedRoom(null);
         setIsCorrect(null);
       }, 1200);
@@ -56,6 +58,7 @@ export function ItemSortingGame({ onFinish }: { onFinish: () => void }) {
   };
 
   const restart = () => {
+    clear();
     setCurrentIdx(0);
     setSelectedRoom(null);
     setIsCorrect(null);

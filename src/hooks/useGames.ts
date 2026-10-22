@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Game } from '@/data/mockData';
+import type { Game } from '@/data/catalog';
 import { gameService } from '@/services/api';
 
 interface UseGamesResult {

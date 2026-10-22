@@ -1,286 +1,93 @@
-import {
-  type Reminder,
-  type Memory,
-  type Person,
-  type Game,
-  mockReminders,
-  mockMemories,
-  mockPeople,
-  mockGames,
-} from '@/data/mockData';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { type Reminder, type Memory, type Person, activityCatalog } from '@/data/catalog';
+import { supabase } from '@/lib/supabaseClient';
+import { normalizeTime, zonedClock, selectOccurrence } from '@/utils/reminders';
 
-/**
- * Base API response type — every hook in src/hooks depends on this shape.
- */
-export interface ApiResponse<T> {
-  data: T;
-  error: string | null;
+export interface ApiResponse<T> { data: T; error: string | null; }
+export async function requireUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw new Error('Your session has expired. Please sign in again.');
+  return data.user;
 }
-
-function fail<T>(fallback: T, message: string): ApiResponse<T> {
-  return { data: fallback, error: message };
+async function remove(table: string, id: string, owner: string) {
+  await requireUser();
+  const { error } = await supabase.from(table).delete().eq('id',id).eq('user_id',owner).select('id').single();
+  if (error) throw error;
 }
-
-async function currentUserId(): Promise<string | null> {
-  if (!isSupabaseConfigured) return null;
-  const isDemo = localStorage.getItem('haven_demo_user');
-  if (isDemo) return null; // Use local in-memory/localStorage interactive data for demo user
-  try {
-    const { data } = await supabase.auth.getUser();
-    return data.user?.id ?? null;
-  } catch {
-    return null;
+async function resolvePhotos<T extends { image: string }>(rows: T[]): Promise<T[]> {
+  return Promise.all(rows.map(async row => {
+    if (!row.image.startsWith('storage:')) return row;
+    const { data, error } = await supabase.storage.from('care-photos').createSignedUrl(row.image.slice(8),300);
+    if (error) throw error;
+    return { ...row, image: data.signedUrl };
+  }));
+}
+async function uploadPhoto(image: string, owner: string) {
+  if (!image.startsWith('data:')) return image;
+  const response = await fetch(image);
+  const blob = await response.blob();
+  if (!['image/jpeg','image/png','image/webp'].includes(blob.type) || blob.size > 5 * 1024 * 1024) throw new Error('Choose a JPG, PNG, or WebP image under 5 MB.');
+  const path = owner + '/' + crypto.randomUUID() + '.' + blob.type.split('/')[1];
+  const { error } = await supabase.storage.from('care-photos').upload(path,blob,{contentType:blob.type,upsert:false});
+  if (error) throw error;
+  return 'storage:' + path;
+}
+async function createWithPhoto<T extends { image: string }>(table: string, item: T, owner: string) {
+  await requireUser();
+  const image = await uploadPhoto(item.image, owner);
+  const { error } = await supabase.from(table).insert({ ...item, image, user_id: owner });
+  if (error) {
+    if (image.startsWith('storage:') && image !== item.image) await supabase.storage.from('care-photos').remove([image.slice(8)]);
+    throw error;
   }
 }
-
-// Helpers for localStorage persistence so demo additions and deletions persist across reloads
-function getStored<T>(key: string, fallback: T): T {
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function setStored<T>(key: string, data: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    // Storage quota exceeded or disabled
-  }
-}
-
-let demoReminders: Reminder[] = getStored('haven_reminders', [...mockReminders]);
-let demoMemories: Memory[] = getStored('haven_memories', [...mockMemories]);
-let demoPeople: Person[] = getStored('haven_people', [...mockPeople]);
-
-/**
- * ─── REMINDER SERVICE ───────────────────────────────────────────────
- */
-
 export const reminderService = {
-  async getAll(): Promise<ApiResponse<Reminder[]>> {
-    const userId = await currentUserId();
-    if (!userId) {
-      return { data: [...demoReminders], error: null };
-    }
-
-    const { data, error } = await supabase
-      .from('reminders')
-      .select('id, type, title, time, description, done, icon')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-
-    if (error) return fail([], error.message);
-    return { data: (data ?? []) as Reminder[], error: null };
+  async getAll(owner: string, timezone: string): Promise<Reminder[]> {
+    const day = zonedClock(new Date(),timezone).day;
+    const previousDay = new Date(Date.parse(day + 'T00:00:00Z') - 86400000).toISOString().slice(0,10);
+    const [reminders, events] = await Promise.all([
+      supabase.from('reminders').select('id,type,title,time,description,icon').eq('user_id',owner),
+      supabase.from('reminder_events').select('reminder_id,occurrence_date,completed_at,snoozed_until').eq('user_id',owner).gte('occurrence_date',previousDay).lte('occurrence_date',day),
+    ]);
+    if (reminders.error) throw reminders.error;
+    if (events.error) throw events.error;
+    return (reminders.data || []).map(row => {
+      const event = selectOccurrence((events.data || []).filter(e => e.reminder_id === row.id),day,timezone);
+      return {...row, time: normalizeTime(row.time), occurrenceDate:event?.occurrence_date || day, done: Boolean(event?.completed_at), completedAt:event?.completed_at, snoozedUntil:event?.snoozed_until} as Reminder;
+    }).sort((a,b) => a.time.localeCompare(b.time));
   },
-
-  async complete(id: string): Promise<ApiResponse<{ id: string; done: boolean }>> {
-    const userId = await currentUserId();
-    if (!userId) {
-      demoReminders = demoReminders.map((r) => (r.id === id ? { ...r, done: true } : r));
-      setStored('haven_reminders', demoReminders);
-      return { data: { id, done: true }, error: null };
-    }
-
-    const { error } = await supabase.from('reminders').update({ done: true }).eq('id', id);
-    if (error) return fail({ id, done: false }, error.message);
-    return { data: { id, done: true }, error: null };
+  async complete(id: string, occurrence?: string) {
+    const { error } = await supabase.rpc('record_reminder_action',{ reminder: id, action: 'complete', occurrence_on: occurrence });
+    if (error) throw error;
   },
-
-  async create(reminder: Omit<Reminder, 'id' | 'done'>): Promise<ApiResponse<Reminder>> {
-    const userId = await currentUserId();
-    const newId = 'rem_' + Math.random().toString(36).slice(2, 9);
-    const newReminder: Reminder = { ...reminder, id: newId, done: false };
-
-    if (!userId) {
-      demoReminders = [...demoReminders, newReminder];
-      setStored('haven_reminders', demoReminders);
-      return { data: newReminder, error: null };
-    }
-
-    const { data, error } = await supabase
-      .from('reminders')
-      .insert({ ...reminder, user_id: userId })
-      .select('id, type, title, time, description, done, icon')
-      .single();
-
-    if (error || !data) return fail(newReminder, error?.message ?? 'Could not create reminder.');
-    return { data: data as Reminder, error: null };
+  async snooze(id: string, occurrence?: string) {
+    const { error } = await supabase.rpc('record_reminder_action',{ reminder: id, action: 'snooze', occurrence_on: occurrence });
+    if (error) throw error;
   },
-
-  async delete(id: string): Promise<ApiResponse<{ id: string }>> {
-    const userId = await currentUserId();
-    if (!userId) {
-      demoReminders = demoReminders.filter((r) => r.id !== id);
-      setStored('haven_reminders', demoReminders);
-      return { data: { id }, error: null };
-    }
-
-    const { error } = await supabase.from('reminders').delete().eq('id', id);
-    if (error) return fail({ id }, error.message);
-    return { data: { id }, error: null };
+  async create(reminder: Omit<Reminder,'id'|'done'>, owner: string) {
+    await requireUser();
+    if (!reminder.title.trim()) throw new Error('Enter a reminder title.');
+    const { error } = await supabase.from('reminders').insert({type:reminder.type,title:reminder.title.trim(),time:normalizeTime(reminder.time),description:reminder.description,icon:reminder.icon,user_id:owner});
+    if (error) throw error;
   },
+  delete: (id: string, owner: string) => remove('reminders',id,owner),
 };
-
-/**
- * ─── MEMORY SERVICE ─────────────────────────────────────────────────
- */
-
 export const memoryService = {
-  async getAll(): Promise<ApiResponse<Memory[]>> {
-    const userId = await currentUserId();
-    if (!userId) {
-      return { data: [...demoMemories], error: null };
-    }
-
-    const { data, error } = await supabase
-      .from('memories')
-      .select('id, title, description, year, image, caption, detail')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-
-    if (error) return fail([], error.message);
-    return { data: (data ?? []) as Memory[], error: null };
+  async getAll(owner: string): Promise<Memory[]> {
+    const {data,error} = await supabase.from('memories').select('id,title,description,year,image,caption,detail').eq('user_id',owner).order('created_at');
+    if (error) throw error;
+    return resolvePhotos(data || []);
   },
-
-  async create(memory: Omit<Memory, 'id'>): Promise<ApiResponse<Memory>> {
-    const userId = await currentUserId();
-    const newId = 'mem_' + Math.random().toString(36).slice(2, 9);
-    const newMemory: Memory = { ...memory, id: newId };
-
-    if (!userId) {
-      demoMemories = [...demoMemories, newMemory];
-      setStored('haven_memories', demoMemories);
-      return { data: newMemory, error: null };
-    }
-
-    const { data, error } = await supabase
-      .from('memories')
-      .insert({ ...memory, user_id: userId })
-      .select('id, title, description, year, image, caption, detail')
-      .single();
-
-    if (error || !data) return fail(newMemory, error?.message ?? 'Could not save memory.');
-    return { data: data as Memory, error: null };
-  },
-
-  async delete(id: string): Promise<ApiResponse<{ id: string }>> {
-    const userId = await currentUserId();
-    if (!userId) {
-      demoMemories = demoMemories.filter((m) => m.id !== id);
-      setStored('haven_memories', demoMemories);
-      return { data: { id }, error: null };
-    }
-
-    const { error } = await supabase.from('memories').delete().eq('id', id);
-    if (error) return fail({ id }, error.message);
-    return { data: { id }, error: null };
-  },
-
-  async clearDemo(): Promise<ApiResponse<Memory[]>> {
-    demoMemories = [];
-    setStored('haven_memories', demoMemories);
-    return { data: [], error: null };
-  },
-
-  async restoreDefaults(): Promise<ApiResponse<Memory[]>> {
-    demoMemories = [...mockMemories];
-    setStored('haven_memories', demoMemories);
-    return { data: [...demoMemories], error: null };
-  },
+  create: (item: Omit<Memory,'id'>, owner: string) => createWithPhoto('memories',item,owner),
+  delete: (id: string, owner: string) => remove('memories',id,owner),
 };
-
-/**
- * ─── PEOPLE SERVICE ─────────────────────────────────────────────────
- */
-
 export const peopleService = {
-  async getAll(): Promise<ApiResponse<Person[]>> {
-    const userId = await currentUserId();
-    if (!userId) {
-      return { data: [...demoPeople], error: null };
-    }
-
-    const { data, error } = await supabase
-      .from('people')
-      .select('id, name, relationship, image, info, phone')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-
-    if (error) return fail([], error.message);
-    return { data: (data ?? []) as Person[], error: null };
+  async getAll(owner: string): Promise<Person[]> {
+    const {data,error} = await supabase.from('people').select('id,name,relationship,image,info,phone').eq('user_id',owner).order('created_at');
+    if (error) throw error;
+    return resolvePhotos(data || []);
   },
-
-  async create(person: Omit<Person, 'id'>): Promise<ApiResponse<Person>> {
-    const userId = await currentUserId();
-    const newId = 'per_' + Math.random().toString(36).slice(2, 9);
-    const newPerson: Person = { ...person, id: newId };
-
-    if (!userId) {
-      demoPeople = [...demoPeople, newPerson];
-      setStored('haven_people', demoPeople);
-      return { data: newPerson, error: null };
-    }
-
-    const { data, error } = await supabase
-      .from('people')
-      .insert({ ...person, user_id: userId })
-      .select('id, name, relationship, image, info, phone')
-      .single();
-
-    if (error || !data) return fail(newPerson, error?.message ?? 'Could not save person.');
-    return { data: data as Person, error: null };
-  },
-
-  async delete(id: string): Promise<ApiResponse<{ id: string }>> {
-    const userId = await currentUserId();
-    if (!userId) {
-      demoPeople = demoPeople.filter((p) => p.id !== id);
-      setStored('haven_people', demoPeople);
-      return { data: { id }, error: null };
-    }
-
-    const { error } = await supabase.from('people').delete().eq('id', id);
-    if (error) return fail({ id }, error.message);
-    return { data: { id }, error: null };
-  },
-
-  async clearDemo(): Promise<ApiResponse<Person[]>> {
-    demoPeople = [];
-    setStored('haven_people', demoPeople);
-    return { data: [], error: null };
-  },
-
-  async restoreDefaults(): Promise<ApiResponse<Person[]>> {
-    demoPeople = [...mockPeople];
-    setStored('haven_people', demoPeople);
-    return { data: [...demoPeople], error: null };
-  },
+  create: (item: Omit<Person,'id'>, owner: string) => createWithPhoto('people',item,owner),
+  delete: (id: string, owner: string) => remove('people',id,owner),
 };
-
-/**
- * ─── GAME SERVICE ───────────────────────────────────────────────────
- * Shared app content — readable by signed-in users or fallbacks to mockGames.
- */
-
-export const gameService = {
-  async getAll(): Promise<ApiResponse<Game[]>> {
-    try {
-      if (!isSupabaseConfigured) return { data: mockGames, error: null };
-      const { data, error } = await supabase
-        .from('games')
-        .select('id, title, description, icon, gradient, category, categoryLabel, conditionTarget, recommendedFor, benefit')
-        .order('created_at', { ascending: true });
-
-      if (error || !data || data.length === 0) {
-        return { data: mockGames, error: null };
-      }
-      return { data: data as Game[], error: null };
-    } catch {
-      return { data: mockGames, error: null };
-    }
-  },
-};
+// Activities are shipped application content, never patient records.
+export const gameService = { async getAll() { return {data:activityCatalog,error:null}; } };

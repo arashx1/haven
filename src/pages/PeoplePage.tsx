@@ -41,7 +41,7 @@ export function PeoplePage() {
               style={{ animationDelay: `${idx * 100}ms` }}
               onClick={() => navigate('person-detail', { personId: person.id })}
             >
-              {person.image && person.image.startsWith('data:') ? (
+              {person.image && (person.image.startsWith('data:image/') || person.image.startsWith('https://')) ? (
                 <img src={person.image} alt={person.name} className="w-full aspect-square object-cover object-top" />
               ) : (
                 <Illustration id={person.image} label={person.name} className="w-full aspect-square" rounded="rounded-none" />

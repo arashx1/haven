@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { ArrowLeft, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, AlertCircle, RefreshCw, Check } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 
 export function PageHeader({
@@ -41,7 +41,7 @@ export function SuccessToast({ message, onClose }: { message: string; onClose: (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink-900/40 animate-fadeIn">
       <div className="bg-white rounded-3xl shadow-lift p-8 max-w-md w-full text-center animate-scaleIn">
         <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-sage-100 flex items-center justify-center">
-          <span className="text-5xl">⭐</span>
+          <Check className="w-10 h-10 text-sage-700" />
         </div>
         <p className="text-2xl font-display font-extrabold text-ink-800 mb-2">Great job!</p>
         <p className="text-lg text-ink-600 mb-6">{message}</p>
@@ -67,7 +67,7 @@ export function EmptyState({ icon, title, message }: { icon: ReactNode; title: s
 
 export function LoadingState({ message = 'Please wait a moment...' }: { message?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 animate-fadeIn">
+    <div role="status" className="flex flex-col items-center justify-center py-16 animate-fadeIn">
       <div className="w-16 h-16 rounded-full border-4 border-cream-200 border-t-honey-500 animate-spin" />
       <p className="text-lg text-ink-500 font-semibold mt-4">{message}</p>
     </div>
@@ -76,7 +76,7 @@ export function LoadingState({ message = 'Please wait a moment...' }: { message?
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="card-base p-8 text-center border-2 border-coral-200">
+    <div role="alert" className="card-base p-8 text-center border-2 border-coral-200">
       <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-coral-100 flex items-center justify-center">
         <AlertCircle className="w-9 h-9 text-coral-600" />
       </div>

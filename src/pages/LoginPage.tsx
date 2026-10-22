@@ -1,182 +1,75 @@
-import { useApp } from '@/context/AppContext';
 import { useState } from 'react';
-import { LogIn, Eye, EyeOff, Sun, Sparkles, Zap } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { useApp } from '@/context/AppContext';
+import { supabase, errorMessage } from '@/lib/supabaseClient';
 import { TopBar } from '@/components/TopBar';
-import { useTranslation } from 'react-i18next';
-
-export function LoginPage() {
-  const { navigate, loginWithDemo } = useApp();
-  const { t } = useTranslation();
-  const [emailOrUsername, setEmailOrUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    const input = emailOrUsername.trim();
-    if (!input) {
-      setError(t('enterEmailOrUsername', 'Please enter your username or email.'));
-      return;
-    }
-
-    setLoading(true);
-
-    // If Supabase is configured and input looks like an email, attempt cloud authentication
-    if (isSupabaseConfigured && input.includes('@')) {
-      try {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: input,
-          password: password || 'demo123',
-        });
-
-        if (!signInError) {
-          localStorage.removeItem('haven_demo_user');
-          setLoading(false);
-          navigate('my-day');
-          return;
-        }
-
-        if (password) {
-          setLoading(false);
-          setError(signInError.message);
-          return;
-        }
-        console.warn('Supabase sign-in notice:', signInError.message, '- Continuing in Demo Mode');
-      } catch (err: unknown) {
-        console.warn('Supabase network error, continuing in Demo Mode:', err);
+export function LoginPage({ signup = false }: { signup?: boolean }) {
+  const { navigate } = useApp();
+  const [name,setName] = useState('');
+  const [email,setEmail] = useState('');
+  const [password,setPassword] = useState('');
+  const [busy,setBusy] = useState(false);
+  const [error,setError] = useState('');
+  const [notice,setNotice] = useState('');
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setBusy(true); setError(''); setNotice('');
+    try {
+      if (signup) {
+        const {data,error} = await supabase.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:location.origin, data:{full_name:name.trim(),timezone:Intl.DateTimeFormat().resolvedOptions().timeZone}}});
+        if (error) throw error;
+        if (data.session) navigate('onboarding');
+        else setNotice('Check your email to confirm your account, then sign in. No care data is saved until your account is verified.');
+      } else {
+        const {error} = await supabase.auth.signInWithPassword({email:email.trim(),password});
+        if (error) throw error;
+        navigate('my-day');
       }
-    }
-
-    // Zero-friction fallback: Sign in immediately with the entered username or email
-    setLoading(false);
-    loginWithDemo(input);
+    } catch(e) { setError(errorMessage(e)); }
+    finally { setBusy(false); }
   };
-
-  const handleQuickDemo = () => {
-    loginWithDemo('Elena Vance');
+  const reset = async () => {
+    if (!email.trim()) { setError('Enter your email address first.'); return; }
+    setBusy(true); setError('');
+    try {
+      const {error} = await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:location.origin + '/?recovery=1'});
+      if (error) throw error;
+      setNotice('If this email has an account, a password reset link will arrive shortly.');
+    } catch(e) { setError(errorMessage(e)); }
+    finally { setBusy(false); }
   };
-
-  return (
-    <div className="min-h-screen bg-cream-50 flex flex-col">
-      {/* Top bar with Haven logo, Feature Tour, Font Size A- / A+, and Language selector */}
-      <TopBar />
-
-      <div className="flex-1 flex items-center justify-center p-4 py-8">
-        <div className="card-base p-6 sm:p-8 max-w-md w-full animate-scaleIn border border-cream-200 shadow-lift">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-honey-400 to-honey-600 flex items-center justify-center shadow-warm">
-              <Sun className="w-9 h-9 text-white" />
-            </div>
-            <h1 className="section-title text-3xl mb-1">{t('welcomeBack', 'Welcome back')}</h1>
-            <p className="text-ink-500 text-base sm:text-lg">
-              {t('happyToSeeYou', "We're happy to see you again.")}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="loginInput" className="block text-base sm:text-lg font-bold text-ink-700 mb-1.5">
-                {t('emailOrUsername', 'Email or Username')}
-              </label>
-              <input
-                id="loginInput"
-                type="text"
-                autoComplete="username"
-                placeholder="e.g. Elena Vance or elena@example.com"
-                value={emailOrUsername}
-                onChange={(e) => setEmailOrUsername(e.target.value)}
-                className="w-full rounded-2xl border-2 border-cream-300 bg-white px-4 py-3.5 text-base sm:text-lg focus:border-honey-400 focus:outline-none transition shadow-xs"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="loginPassword" className="block text-base sm:text-lg font-bold text-ink-700 mb-1.5">
-                {t('password', 'Password')}
-              </label>
-              <div className="relative">
-                <input
-                  id="loginPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="Enter password (optional in demo)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-2xl border-2 border-cream-300 bg-white px-4 py-3.5 pr-12 text-base sm:text-lg focus:border-honey-400 focus:outline-none transition shadow-xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-ink-400 hover:text-ink-600"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-coral-600 font-semibold text-sm bg-coral-50 rounded-xl px-4 py-2.5">{error}</p>
-            )}
-
-            <button type="submit" disabled={loading} className="btn-primary w-full text-lg sm:text-xl py-3.5 shadow-warm">
-              <LogIn className="w-5 h-5" />
-              {loading ? 'Logging in…' : t('logIn', 'Log In')}
-            </button>
-
-            {/* Quick 1-Click Demo Login Button for Judges and Hackathon Reviewers */}
-            <button
-              type="button"
-              onClick={handleQuickDemo}
-              className="w-full bg-sage-50 hover:bg-sage-100 border-2 border-sage-300 text-sage-800 font-bold py-3 px-4 rounded-2xl flex items-center justify-center gap-2 text-base transition active:scale-98 shadow-xs"
-              title="Instantly login as demo patient Elena Vance without filling details"
-            >
-              <Zap className="w-4 h-4 text-sage-600 fill-sage-500" />
-              <span>{t('quickDemoLogin', '⚡ Quick Demo Login (Elena Vance)')}</span>
-            </button>
-          </form>
-
-          <div className="flex items-center justify-between mt-4">
-            <button
-              onClick={() => navigate('signup')}
-              className="text-honey-600 font-bold text-base hover:text-honey-700 transition"
-            >
-              {t('createAccount', 'Create an account')}
-            </button>
-            <button
-              onClick={() => setError('You can log in directly with any username in Demo Mode!')}
-              className="text-ink-400 font-semibold text-sm hover:text-ink-600 transition"
-            >
-              {t('forgotPassword', 'Forgot password?')}
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="relative my-5 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-cream-200" />
-            </div>
-            <span className="relative bg-white px-3 text-xs text-ink-400 font-semibold uppercase tracking-wider">
-              or preview features
-            </span>
-          </div>
-
-          {/* Interactive Tour */}
-          <button
-            type="button"
-            onClick={() => navigate('demo')}
-            className="w-full bg-gradient-to-r from-honey-50 to-amber-50 hover:from-honey-100 hover:to-amber-100 border-2 border-honey-200 text-honey-800 font-bold py-3 px-4 rounded-2xl flex items-center justify-center gap-2 text-sm sm:text-base transition active:scale-98 shadow-xs"
-          >
-            <Sparkles className="w-4 h-4 text-honey-600" />
-            {t('tourPrompt', 'Take the Interactive Feature Tour')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="min-h-screen bg-cream-50"><TopBar /><main id="main-content" className="max-w-md mx-auto px-4 py-10">
+    <div className="card-base p-6 sm:p-8"><p className="eyebrow">A little help, every day</p><h1 className="section-title text-3xl mt-2">{signup ? 'Make room for care.' : 'Welcome to Haven.'}</h1>
+    <p className="text-ink-600 my-4">{signup ? 'Create your own account. You can invite a trusted helper after signing in.' : 'Your routines, familiar faces, and memories, together in one quiet place.'}</p>
+    <form onSubmit={submit} className="space-y-4">
+      {signup && <label className="field-label">Your name<input autoComplete="name" required maxLength={100} value={name} onChange={e=>setName(e.target.value)} className="field-input" /></label>}
+      <label className="field-label">Email<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="field-input" /></label>
+      <label className="field-label">Password<input type="password" required minLength={signup ? 8 : 1} autoComplete={signup ? 'new-password' : 'current-password'} value={password} onChange={e=>setPassword(e.target.value)} className="field-input" /></label>
+      {signup && <p className="text-sm text-ink-500">Use at least 8 characters. Your care information is private to you and helpers you explicitly invite.</p>}
+      {error && <p role="alert" className="error-message">{error}</p>}{notice && <p role="status" className="notice">{notice}</p>}
+      <button disabled={busy} className="btn-primary w-full" type="submit">{busy ? 'Please wait…' : signup ? 'Create account' : 'Sign in'}</button>
+    </form>
+    {!signup && <button onClick={reset} disabled={busy} className="text-honey-700 font-bold py-4">Forgot password?</button>}
+    <button onClick={()=>navigate(signup ? 'login':'signup')} className="btn-secondary w-full mt-3">{signup ? 'Already have an account? Sign in' : 'Create a new account'}</button>
+    </div><p className="text-sm text-ink-500 mt-5 text-center">Haven helps organize everyday care. It is not an emergency response service.</p>
+  </main></div>;
+}
+export function ResetPasswordPage() {
+  const {navigate} = useApp();
+  const [password,setPassword] = useState(''), [confirm,setConfirm] = useState(''), [error,setError] = useState('');
+  const [busy,setBusy] = useState(false);
+  const submit = async (e:React.FormEvent) => {
+    e.preventDefault(); setError('');
+    if (password !== confirm) {setError('Passwords do not match.'); return;}
+    setBusy(true);
+    try {
+      const {error} = await supabase.auth.updateUser({password});
+      if(error) throw error;
+      history.replaceState(null,'',location.pathname);
+      navigate('my-day'); location.reload();
+    } catch(e) {setError(errorMessage(e));} finally {setBusy(false);}
+  };
+  return <main className="max-w-md mx-auto p-6"><form onSubmit={submit} className="card-base p-6 space-y-4"><h1 className="section-title text-2xl">Choose a new password</h1>
+    <label className="field-label">New password<input required type="password" minLength={8} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} className="field-input" /></label>
+    <label className="field-label">Confirm password<input required type="password" minLength={8} autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} className="field-input" /></label>
+    {error && <p role="alert" className="error-message">{error}</p>}<button disabled={busy} className="btn-primary w-full">{busy ? 'Saving…' : 'Save password'}</button>
+  </form></main>;
 }
