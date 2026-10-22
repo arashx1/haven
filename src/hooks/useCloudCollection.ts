@@ -11,11 +11,11 @@ export function useCloudCollection<T>(key: string, loader: () => Promise<T[]>) {
   const load = useCallback(async () => {
     const current = ++version.current;
     try { const result = await loaderRef.current(); if (version.current === current) {setData(result); setError(null); setLastSynced(new Date());} }
-    catch (e) { if (version.current === current) setError(errorMessage(e)); }
+    catch (e) { if (version.current === current) { setData([]); setLastSynced(null); setError(errorMessage(e)); } }
     finally { if (version.current === current) setLoading(false); }
   },[]);
   useEffect(() => {
-    setData([]); setLoading(true); setLastSynced(null);
+    setData([]); setLoading(true); setError(null); setLastSynced(null);
     void load();
     const update = () => { if (document.visibilityState === 'visible') void load(); };
     const changed = () => { void load(); };

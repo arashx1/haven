@@ -24,3 +24,13 @@ dist-ssr
 *.pdf
 demo_script.html
 
+
+# Local credentials and provider configuration
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.vercel/
+.supabase/

@@ -8,7 +8,7 @@ test('normalizes old 12-hour data and new clock inputs without noon/midnight amb
   assert.equal(normalizeTime('07:30:00'),'07:30');
 });
 test('rejects malformed or out-of-range reminder times',()=>{
-  for(const input of ['25:00','12:60','00:30 PM','13:15 AM','later','-1:00','7:5','']) assert.throws(()=>normalizeTime(input));
+  for(const input of ['25:00','12:60','00:30 PM','13:15 AM','later','-1:00','7:5','07:30:60','07:30:99','']) assert.throws(()=>normalizeTime(input));
 });
 test('uses the patient timezone across day boundaries',()=>{
   const instant=new Date('2026-10-22T20:00:00Z');

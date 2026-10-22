@@ -1,6 +1,6 @@
 import { type Reminder, type Memory, type Person, activityCatalog } from '@/data/catalog';
 import { supabase } from '@/lib/supabaseClient';
-import { normalizeTime, zonedClock, selectOccurrence } from '@/utils/reminders';
+import { normalizeTime, zonedClock, selectOccurrence, phoneHref } from '@/utils/reminders';
 
 export interface ApiResponse<T> { data: T; error: string | null; }
 export async function requireUser() {
@@ -77,7 +77,10 @@ export const memoryService = {
     if (error) throw error;
     return resolvePhotos(data || []);
   },
-  create: (item: Omit<Memory,'id'>, owner: string) => createWithPhoto('memories',item,owner),
+  create: (item: Omit<Memory,'id'>, owner: string) => {
+    if (!item.title.trim()) throw new Error('Enter a memory title.');
+    return createWithPhoto('memories',{...item,title:item.title.trim()},owner);
+  },
   delete: (id: string, owner: string) => remove('memories',id,owner),
 };
 export const peopleService = {
@@ -86,7 +89,11 @@ export const peopleService = {
     if (error) throw error;
     return resolvePhotos(data || []);
   },
-  create: (item: Omit<Person,'id'>, owner: string) => createWithPhoto('people',item,owner),
+  create: (item: Omit<Person,'id'>, owner: string) => {
+    if (!item.name.trim()) throw new Error('Enter a name.');
+    if (item.phone?.trim() && !phoneHref(item.phone)) throw new Error('Enter a phone number with 7 to 15 digits, optionally starting with +.');
+    return createWithPhoto('people',{...item,name:item.name.trim()},owner);
+  },
   delete: (id: string, owner: string) => remove('people',id,owner),
 };
 // Activities are shipped application content, never patient records.

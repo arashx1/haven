@@ -15,13 +15,16 @@ const HelpPage=lazy(()=>import('@/pages/HelpPage').then(m=>({default:m.HelpPage}
 const CaregiverDashboardPage=lazy(()=>import('@/pages/CaregiverDashboardPage').then(m=>({default:m.CaregiverDashboardPage})));
 const OnboardingPage=lazy(()=>import('@/pages/OnboardingPage').then(m=>({default:m.OnboardingPage})));
 const PaywallModal=lazy(()=>import('@/components/PaywallModal').then(m=>({default:m.PaywallModal})));
-function Loading(){return <div role="status" className="p-12 text-center text-ink-600">Opening Haven…</div>;}
+function Loading(){return <div role="status" className="p-12 text-center text-ink-600">Opening HavenÃ¢â‚¬Â¦</div>;}
 function AppRouter(){
-  const {route,session,authLoading,patientId,profileError,refreshProfiles,paywallOpen,closePaywall}=useApp();
+  const {route,session,authLoading,patientId,profiles,profileError,refreshProfiles,signOut,paywallOpen,closePaywall}=useApp();
   if(!isSupabaseConfigured) return <main className="max-w-lg p-8 mx-auto"><h1 className="section-title text-2xl">Haven is not connected yet.</h1><p className="mt-4">Account services are unavailable. Please contact the app administrator.</p></main>;
   if(authLoading) return <Loading/>;
   if(!session) return route==='signup'?<SignUpPage/>:<LoginPage/>;
   if(new URLSearchParams(location.search).get('recovery')==='1') return <ResetPasswordPage/>;
+  if (!profiles.some(profile => profile.id === patientId)) return profileError
+    ? <main className="max-w-lg mx-auto p-8"><p role="alert" className="error-message">{profileError}</p><button className="btn-primary mt-4" onClick={()=>void refreshProfiles()}>Retry loading care profile</button><button className="btn-secondary mt-4 ml-3" onClick={()=>void signOut()}>Sign out</button></main>
+    : <Loading/>;
   let page;
   switch(route){
     case 'caregiver-dashboard': page=<CaregiverDashboardPage/>;break;

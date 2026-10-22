@@ -1,10 +1,10 @@
 export function normalizeTime(value: string): string {
-  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::([0-5]\d))?\s*(AM|PM)?$/i);
   if (!match) throw new Error('Choose a valid reminder time.');
   let hour = Number(match[1]);
   const minute = Number(match[2]);
-  if (minute > 59 || (match[3] ? hour < 1 || hour > 12 : hour > 23)) throw new Error('Choose a valid reminder time.');
-  if (match[3]) hour = hour % 12 + (match[3].toUpperCase() === 'PM' ? 12 : 0);
+  if (minute > 59 || (match[4] ? hour < 1 || hour > 12 : hour > 23)) throw new Error('Choose a valid reminder time.');
+  if (match[4]) hour = hour % 12 + (match[4].toUpperCase() === 'PM' ? 12 : 0);
   return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
 }
 export function zonedClock(date: Date, timeZone: string) {

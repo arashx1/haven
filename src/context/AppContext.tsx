@@ -67,7 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!session) return;
     const { data, error } = await supabase.from('profiles').select('id,full_name,care_condition,timezone').order('created_at');
     if (currentUser.current !== session.user.id) return;
-    if (error) { setProfileError('Could not load care profiles: ' + error.message); return; }
+    if (error) { setProfiles([]); setProfileError('Could not load care profiles: ' + error.message); return; }
     const available = (data || []) as CareProfile[];
     setProfiles(available);
     setPatientId(current => available.some(p => p.id === current) ? current : session.user.id);
@@ -78,9 +78,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProfileError('');
     if (session) void refreshProfiles();
   }, [session?.user.id, refreshProfiles]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Do not keep speaking another screen's private care information.
+    window.speechSynthesis?.cancel();
+    return () => window.speechSynthesis?.cancel();
+  }, [locationState.route, patientId, session?.user.id]);
   const profile = profiles.find(p => p.id === patientId);
   const updateProfile = async (values: Partial<Pick<CareProfile,'full_name'|'care_condition'|'timezone'>>) => {
     if (!session || patientId !== session.user.id) throw new Error('Only the account owner can change these settings.');
+    if (values.full_name !== undefined && !values.full_name.trim()) throw new Error('Enter your name.');
     if (values.care_condition && !CONDITIONS.some(c => c.id === values.care_condition)) throw new Error('Choose a valid care focus.');
     if (values.timezone) new Intl.DateTimeFormat('en', { timeZone: values.timezone }).format();
     const { error } = await supabase.from('profiles').update(values).eq('id',patientId).select('id').single();
